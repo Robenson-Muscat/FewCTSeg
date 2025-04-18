@@ -1,6 +1,4 @@
 # FewCTSeg
-Challenge data Raidium - Segmentation médicale de structures anatomiques avec des labels manquants
-
 
 ## Contexte
 Les CT-scans offrent des images 3D très précises du corps humain (jusqu’à 0,5 mm de résolution) et permettent ainsi de saisir l’anatomie humaine.

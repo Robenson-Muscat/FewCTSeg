@@ -33,7 +33,8 @@ class CTDataset(Dataset):
 class CTScanDataset(Dataset):
     def __init__(self, img_dir, masks, transform=None):
         self.img_paths = sorted(glob.glob(os.path.join(img_dir, '**/*.png'),recursive = True),key=alphanumeric_sort)
-        self.masks = masks  # Masques déjà chargés
+        # 
+        self.masks = masks  # Masks
         self.transform = transform
         print(f"Nombre d'images : {len(self.img_paths)}")
         print(f"Nombre de masques : {self.masks.shape[0]}")
@@ -43,15 +44,15 @@ class CTScanDataset(Dataset):
         return len(self.img_paths)
 
     def __getitem__(self, idx):
-        img = cv2.imread(self.img_paths[idx], cv2.IMREAD_GRAYSCALE)  # Charger image en niveaux de gris
-        img = np.expand_dims(img, axis=0)  # Ajouter un canal
+        img = cv2.imread(self.img_paths[idx])#, cv2.IMREAD_GRAYSCALE) 
+        img = np.expand_dims(img, axis=0) 
 
-        mask = self.masks[idx].astype(np.float32)  # Récupérer le masque
-        mask = np.expand_dims(mask, axis=0)  # Ajouter un canal
+        mask = self.masks[idx].astype(np.float32)  # Get the mask
+        mask = np.expand_dims(mask, axis=0)  # Add a canal
 
         if self.transform:
             img = self.transform(img)
-            mask = torch.tensor(mask)  # Convertir en Tensor directement
+            mask = torch.tensor(mask)  # Convert to a Tensor
 
         return img, mask
 

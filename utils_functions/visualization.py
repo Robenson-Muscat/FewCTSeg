@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 from torchvision.utils import make_grid
 from torchvision.datasets import ImageFolder
 from mpl_toolkits.axes_grid1 import ImageGrid
@@ -49,5 +50,19 @@ def visu_label(index_img):
     ax.imshow(dataset.imgs[im], cmap="gray")
     seg_masked = np.ma.masked_where(labels_train.iloc[im].values.reshape((256, 256)) == 0, (labels_train.iloc[im].values.reshape((256, 256))))
     ax.imshow(seg_masked)
+
+
+
+ 
+# Simple function to overlay mask on image for visualization
+def overlay_mask(image, mask, alpha=0.5, color=(0, 1, 0)): # Green overlay
+    # Convert mask to 3 channels if needed, ensure boolean type
+    mask_overlay = np.zeros_like(image, dtype=np.uint8)
+    # Create a color overlay where mask is > 0
+    mask_overlay[mask > 0] = (np.array(color) * 255).astype(np.uint8)
+ 
+    # Blend image and overlay
+    overlayed_image = cv2.addWeighted(image, 1, mask_overlay, alpha, 0)
+    return overlayed_image
 
 

@@ -54,8 +54,9 @@ def visu_label(index_img):
 
 
  
-# Simple function to overlay mask on image for visualization
+
 def overlay_mask(image, mask, alpha=0.5, color=(0, 1, 0)): # Green overlay
+    """ Simple function to overlay mask on image for visualization (green overlay)"""
     # Convert mask to 3 channels if needed, ensure boolean type
     mask_overlay = np.zeros_like(image, dtype=np.uint8)
     # Create a color overlay where mask is > 0

@@ -1,6 +1,6 @@
 import sys
 sys.path.append("../")
-from utils_functions.sort_files import alphanumeric_sort
+from utils_functions.sort_files import alphanumeric_sort #Function which sort alphanumerically files
 import glob
 import os
 import numpy as np

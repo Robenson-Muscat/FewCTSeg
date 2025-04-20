@@ -30,4 +30,4 @@ def dice_pandas(y_true_df: pd.DataFrame, y_pred_df: pd.DataFrame) -> float:
     return float(np.nanmean(cls_dices))
 
 # Compute metric
-#sdice_pandas(labels_val, labels_val_predicted_baseline)
+#dice_pandas(labels_val, labels_val_predicted_baseline)

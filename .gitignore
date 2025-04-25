@@ -5,6 +5,9 @@
 
 data/
 .ipynb_checkpoints/
+*.csv
+docs/
+
 
 # User-specific files
 *.rsuser

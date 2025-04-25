@@ -201,3 +201,20 @@ class AlbuRGBCTScanDataset(Dataset):
         return img_tensor, mask_tensor
 
 
+# Dataset test (sans masques)
+class CTTestDataset(Dataset):
+    def __init__(self, image_dir, transform=None):
+        self.image_paths = sorted(glob.glob(os.path.join(image_dir, "*.png")), key=alphanumeric_sort)
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        img = cv2.imread(self.image_paths[idx])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        name = os.path.basename(self.image_paths[idx])
+        if self.transform:
+            img = self.transform(image=img)['image']
+        return img, name
+

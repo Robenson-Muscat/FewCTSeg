@@ -107,8 +107,6 @@ class GrayCTScanDataset(Dataset):
 
         return img_tensor, mask_tensor
 
-
-
 # ---------------------------
 # 1. Dataset Definition
 # ---------------------------
@@ -156,20 +154,15 @@ class RGBCTScanDataset(Dataset):
         return img_tensor, mask_tensor
 
 
-#Si ca ne marche pas tout faire avec Albumentations, les mises sous tenseur
-
-
-class AlbuRGBCTScanDataset(Dataset):
-    def __init__(self, image_dir, mask_csv=None, transform=A.Compose([A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-    # Convert image to PyTorch tensor
-    A.ToTensorV2(),
-])):
+class CTScanDataset(Dataset):
+    ###THE RIGHT#####
+    def __init__(self, image_dir, mask_csv=None, transform=None):
         self.image_dir = image_dir
-        self.image_paths = sorted(glob.glob(os.path.join(image_dir, "*.png")),key = alphanumeric_sort)
+        self.image_paths = sorted(glob.glob(os.path.join(image_dir, "*.png")),key = alphanumeric_sort)[:800]
         self.transform = transform
-        
+
         if mask_csv is not None:
-            masks = pd.read_csv(mask_csv, index_col=0, header=0).T.values
+            masks = pd.read_csv(mask_csv, index_col=0, header=0).T.values[:800]
             self.masks = masks.reshape(-1, 256, 256).astype(np.uint8)
         else:
             self.masks = None
@@ -178,17 +171,19 @@ class AlbuRGBCTScanDataset(Dataset):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        
+
         # Read image and convert to RGB
         img = cv2.imread(self.image_paths[idx])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # (H,W,3)
 
-        
+        # IF ONE CHANNEL
+        #img = cv2.imread(self.image_paths[idx],cv2.IMREAD_UNCHANGED)
+        #img = np.expand_dims(img, axis=2)
+
         #Read mask
-        mask_tensor = None
+        mask = None
         if self.masks is not None:
-            mask = self.masks[idx]
-            
+            mask = self.masks[idx]  #(H,W)
 
         # Apply Albumentations transforms
         if self.transform:
@@ -196,10 +191,15 @@ class AlbuRGBCTScanDataset(Dataset):
             augmented = self.transform(image=img, mask=mask)
             img_tensor = augmented['image']
             mask_tensor = augmented['mask']
-            
+        else:
+          img = img.astype(np.float32) / 255.0  
+          img_tensor = torch.from_numpy(img).permute(2,0,1).contiguous()  # (C,H,W)
+          if mask is not None:
+              mask_tensor = torch.from_numpy(mask).long()
+          else:
+              mask_tensor = torch.zeros((img.shape[0], img.shape[1]), dtype=torch.long)
 
-        return img_tensor, mask_tensor
-
+        return img_tensor, mask_tensor!
 
 # Dataset test (sans masques)
 class CTTestDataset(Dataset):

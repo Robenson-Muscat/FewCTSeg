@@ -1,8 +1,6 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-
-
 from torchvision.utils import make_grid
 from torchvision.datasets import ImageFolder
 from mpl_toolkits.axes_grid1 import ImageGrid
@@ -52,6 +50,65 @@ def visu_label(index_img):
     ax.imshow(seg_masked)
 
 
+ 
+def visualize_segmentation(dataset, idx=0, samples=3):
+    """Visualization of the image and its mask"""
+    if isinstance(dataset.transform, A.Compose):
+        vis_transform_list = [
+            t for t in dataset.transform
+            if not isinstance(t, (A.Normalize, A.ToTensorV2))
+        ]
+        vis_transform = A.Compose(vis_transform_list)
+    else:
+        print("Warning: Could not automatically strip Normalize/ToTensor for visualization.")
+        vis_transform = dataset.transform
+ 
+    figure, ax = plt.subplots(samples + 1, 2, figsize=(8, 4 * (samples + 1)))
+ 
+    # --- Get the original image and mask --- #
+    original_transform = dataset.transform
+    dataset.transform = None # Temporarily disable for raw data access
+    image, mask = dataset[idx]
+    dataset.transform = original_transform # Restore
+ 
+    # Display original
+    ax[0, 0].imshow(image)
+    ax[0, 0].set_title("Original Image")
+    ax[0, 0].axis("off")
+    ax[0, 1].imshow(mask, cmap='gray') # Show mask directly
+    ax[0, 1].set_title("Original Mask")
+    ax[0, 1].axis("off")
+    # ax[0, 1].imshow(overlay_mask(image, mask)) # Or show overlay
+    # ax[0, 1].set_title("Original Overlay")
+ 
+    # --- Apply and display augmented versions --- #
+    for i in range(samples):
+        # Apply the visualization transform
+        if vis_transform:
+            augmented = vis_transform(image=image, mask=mask)
+            aug_image = augmented['image']
+            aug_mask = augmented['mask']
+        else:
+            aug_image, aug_mask = image, mask # Should not happen normally
+ 
+        # Display augmented image and mask
+        ax[i + 1, 0].imshow(aug_image)
+        ax[i + 1, 0].set_title(f"Augmented Image {i+1}")
+        ax[i + 1, 0].axis("off")
+ 
+        ax[i + 1, 1].imshow(aug_mask, cmap='gray') # Show mask directly
+        ax[i + 1, 1].set_title(f"Augmented Mask {i+1}")
+        ax[i + 1, 1].axis("off")
+        # ax[i+1, 1].imshow(overlay_mask(aug_image, aug_mask)) # Or show overlay
+        # ax[i+1, 1].set_title(f"Augmented Overlay {i+1}")
+ 
+ 
+    plt.tight_layout()
+    plt.show()
+ 
+# Assuming train_dataset is created with train_transform:
+# visualize_segmentation(train_dataset, samples=3)
+ 
 
  
 
@@ -66,4 +123,25 @@ def overlay_mask(image, mask, alpha=0.5, color=(0, 1, 0)): # Green overlay
     overlayed_image = cv2.addWeighted(image, 1, mask_overlay, alpha, 0)
     return overlayed_image
 
+
+#Visualize augmentations
+def visualize_augmentations(dataset, idx=0, samples=5):
+    dataset = copy.deepcopy(dataset)
+    dataset.transform = A.Compose([t for t in dataset.transform if not isinstance(t, (A.Normalize, ToTensorV2))])
+    _, ax = plt.subplots(nrows=samples, ncols=2, figsize=(10, 24))
+    for i in range(samples):
+        image, mask = dataset[idx]
+        ax[i, 0].imshow(image)
+        ax[i, 1].imshow(mask, interpolation="nearest")
+        ax[i, 0].set_title("Augmented image")
+        ax[i, 1].set_title("Augmented mask")
+        ax[i, 0].set_axis_off()
+        ax[i, 1].set_axis_off()
+    plt.tight_layout()
+    plt.show()
+
+#How to use augmentations
+#aug = A.ElasticTransform(always_apply=False, p=1.0, alpha=1.0, sigma=50.0, alpha_affine=50.0, interpolation=0, border_mode=0, value=(0, 0, 0), mask_value=None, approximate=False)
+#elt = aug(image=originalImage)[‘image’]
+#cv2_imshow(elt)
 

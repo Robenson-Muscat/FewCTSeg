@@ -13,12 +13,12 @@ def count_labels_preds(labels_test):
 
 
 
-def pred_and_save(test_loader, model, labels_train,output_filename):
+def pred_and_save(test_loader, model,  labels_path,output_filename):
     """Predicts on test set and save the csv file at the submission format
     Args :
     test_loader : Loader on test set 
     model : Segmentation model
-    labels_train (pd.DataFrame) : DataFrame of classes predicted on every pixel of test set
+    labels_path (str) : Path for DataFrame of labels predicted on every pixel of train set
     output_filename : Filename path """
     
     all_preds = []
@@ -37,7 +37,8 @@ def pred_and_save(test_loader, model, labels_train,output_filename):
                 all_preds.append(p.flatten())
                 filenames.append(n)
                 
-    df = pd.DataFrame(np.stack(all_preds, axis=0), columns= labels_train.columns)
+    labels_train = pd.read_csv(labels_path, index_col=0, header=0)
+    df = pd.DataFrame(np.stack(all_preds, axis=0), columns= labels_train.T.columns)
     df = df.T
     df.columns = filenames
     

@@ -31,3 +31,18 @@ def dice_pandas(y_true_df: pd.DataFrame, y_pred_df: pd.DataFrame) -> float:
 
 # Compute metric
 #dice_pandas(labels_val, labels_val_predicted_baseline)
+# ---------------------------
+# Dice metric function
+# ---------------------------
+def compute_dice_score(preds, masks, num_classes=55):
+    # preds, masks: torch.LongTensor (B,H,W)
+    dices = []
+    for c in range(num_classes):
+        pred_c = (preds == c).float()
+        mask_c = (masks == c).float()
+        intersection = (pred_c * mask_c).sum()
+        union = pred_c.sum() + mask_c.sum()
+        if union.item() == 0:
+            continue
+        dices.append((2.0 * intersection / union).item())
+    return np.mean(dices) if dices else 0.0

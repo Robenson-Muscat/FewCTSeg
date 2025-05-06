@@ -61,3 +61,43 @@ def compute_dice_score(preds, masks, C=55):
         if denom>0:
             dices.append((2*inter/denom).item())
     return np.mean(dices) if dices else 0.0
+
+
+def dice_score(preds: torch.Tensor, targets: torch.Tensor, num_classes: int = 55, smooth: float = 1e-6) -> torch.Tensor:
+    """
+    Calculate the average Dice score over all classes for a batch.
+    preds: logits output from the model (B, C, H, W)
+    targets: ground-truth masks (B, H, W)
+    """
+    # Convert logits to predicted class labels
+    preds = torch.argmax(preds, dim=1)
+    dice = 0.0
+    for cls in range(num_classes):
+        pred_cls = (preds == cls).float()
+        true_cls = (targets == cls).float()
+        intersection = (pred_cls * true_cls).sum(dim=(1, 2))
+        union = pred_cls.sum(dim=(1, 2)) + true_cls.sum(dim=(1, 2))
+        dice += ((2 * intersection + smooth) / (union + smooth)).mean()
+    return dice / num_classes
+
+
+
+def weighted_dice_score(preds: torch.Tensor,
+                        targets: torch.Tensor,
+                        weights: torch.Tensor,
+                        num_classes: int = 55,
+                        smooth: float = 1e-6) -> torch.Tensor:
+    """
+    Calculate the weighted Dice score over all classes for a batch.
+    weights: 1D tensor of length num_classes
+    """
+    preds = torch.argmax(preds, dim=1)
+    dice_per_class = torch.zeros(num_classes, device=preds.device)
+    for cls in range(num_classes):
+        pred_cls = (preds == cls).float()
+        true_cls = (targets == cls).float()
+        intersection = (pred_cls * true_cls).sum(dim=(1, 2))
+        union = pred_cls.sum(dim=(1, 2)) + true_cls.sum(dim=(1, 2))
+        dice_per_class[cls] = ((2 * intersection + smooth) / (union + smooth)).mean()
+    # Weighted sum
+    return (dice_per_class * weights).sum() / weights.sum()

@@ -176,3 +176,25 @@ def visualize(image, mask, original_image=None, original_mask=None):
 #original_height, original_width = image.shape[:2]
 #visualize(image, mask)
 
+def get_indices_by_label(label: int, mask_df: pd.DataFrame) -> list:
+    """
+    Retourne les indices des images dont le masque contient le label donné.
+
+    Args:
+        label: entier correspondant au label recherché.
+        mask_df: DataFrame chargé par pd.read_csv(mask_csv, index_col=0), "\
+        "où chaque colonne est un pixel et chaque ligne un index de pixel.
+
+    Returns:
+        List[int]: indices des images contenant au moins un pixel du label.
+    """
+    #Potentiellement remplacer par mask_path
+    # Transpose pour obtenir shape (n_images, H*W)
+    masks = mask_df.T.values
+    # Boolean mask des images contenant le label
+    mask_contains = (masks == label).any(axis=1)
+    # Retourner les indices des True
+    return mask_contains.nonzero()[0].tolist()
+
+#masks = pd.read_csv("/content/drive/MyDrive/Raidium_challenge/y_train.csv")
+#get_indices_by_label(7,masks)

@@ -46,3 +46,18 @@ def compute_dice_score(preds, masks, num_classes=55):
             continue
         dices.append((2.0 * intersection / union).item())
     return np.mean(dices) if dices else 0.0
+
+
+# ---------------------------
+# Dice metric
+# ---------------------------
+def compute_dice_score(preds, masks, C=55):
+    dices = []
+    for c in range(C):
+        pc = (preds==c).float()
+        mc = (masks==c).float()
+        inter = (pc*mc).sum()
+        denom = pc.sum()+mc.sum()
+        if denom>0:
+            dices.append((2*inter/denom).item())
+    return np.mean(dices) if dices else 0.0

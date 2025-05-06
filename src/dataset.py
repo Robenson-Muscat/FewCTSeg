@@ -1,6 +1,7 @@
 import sys
-sys.path.append("../")
-from utils_functions.sort_files import alphanumeric_sort #Function which sort alphanumerically files
+sys.path.append("utils_functions/")
+from sort_files import alphanumeric_sort
+#from utils_functions.sort_files import alphanumeric_sort #Function which sort alphanumerically files
 import glob
 import os
 import numpy as np
@@ -8,6 +9,8 @@ from PIL import Image
 import torch
 import cv2
 import albumentations as A
+from torch.utils.data import Dataset
+import pandas as pd
 #cv2.setNumThreads(0)  - To avoid slower computation
 
 class CTVisuDataset(Dataset):
@@ -148,7 +151,7 @@ class RGBCTScanDataset(Dataset):
             #torch.Size([1, 256, 256]), dtype: torch.uint8
 
         if self.transform:
-            img_tensor = self.transform(img_tensor))
+            img_tensor = self.transform(img_tensor)
             
 
         return img_tensor, mask_tensor
@@ -199,7 +202,7 @@ class CTScanDataset(Dataset):
           else:
               mask_tensor = torch.zeros((img.shape[0], img.shape[1]), dtype=torch.long)
 
-        return img_tensor, mask_tensor!
+        return img_tensor, mask_tensor
 
 # Dataset test (sans masques)
 class CTTestDataset(Dataset):
@@ -218,3 +221,96 @@ class CTTestDataset(Dataset):
             img = self.transform(image=img)['image']
         return img, name
 
+
+class UnlabCTScanDataset(Dataset):
+    """Class Dataset to utilise semi-supervised methods on unlabeled data"""
+    def __init__(self, image_dir, mask_csv=None, transform=None):
+        self.image_dir = image_dir
+        self.image_paths = sorted(glob.glob(os.path.join(image_dir, "*.png")),key = alphanumeric_sort)[800:]
+        self.transform = transform
+
+        if mask_csv is not None:
+            masks = pd.read_csv(mask_csv, index_col=0, header=0).T.values[800:]
+            self.masks = masks.reshape(-1, 256, 256).astype(np.uint8)
+        else:
+            self.masks = None
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+
+        # Read image and convert to RGB
+        img = cv2.imread(self.image_paths[idx])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # (H,W,3)
+
+        #Read mask
+        mask = None
+        if self.masks is not None:
+            mask = self.masks[idx]  #(H,W)
+
+        # Apply Albumentations transforms
+        if self.transform:
+            # Pass both image and mask
+            augmented = self.transform(image=img, mask=mask)
+            img = augmented['image']
+            mask = augmented['mask']
+        
+            
+
+        return img, mask
+
+class LabCTScanDataset(Dataset):
+    """Class Dataset on labeled data"""
+    def __init__(self, image_dir, mask_csv=None, transform=None):
+        self.image_dir = image_dir
+        self.image_paths = sorted(glob.glob(os.path.join(image_dir, "*.png")),key = alphanumeric_sort)[:800]
+        
+        self.transform = transform
+
+        if mask_csv is not None:
+            masks = pd.read_csv(mask_csv, index_col=0, header=0).T.values[:800]
+            self.masks = masks.reshape(-1, 256, 256).astype(np.uint8)
+        else:
+            self.masks = None
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+
+        # Read image and convert to RGB
+        img = cv2.imread(self.image_paths[idx])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # (H,W,3)
+
+        #Read mask
+        mask = None
+        if self.masks is not None:
+            mask = self.masks[idx]  #(H,W)
+
+        # Apply Albumentations transforms
+        if self.transform:
+            # Pass both image and mask
+            augmented = self.transform(image=img, mask=mask)
+            img_tensor = augmented['image']
+            mask_tensor = augmented['mask']
+            
+
+        return img_tensor, mask_tensor
+"""
+weak_augment= A.Compose([
+    A.Transpose(p=1), # Ou verticalFlip
+    A.CLAHE(clip_limit=(4,4)),#ou/et AdvancedBlur
+    A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+    A.ToTensorV2(),
+    ],
+)
+strong_augment= A.Compose([
+        A.Transpose(p=1),
+        A.ElasticTransform(alpha=400, sigma=10, alpha_affine=None, p=0.5),
+        A.GridDistortion(distort_limit=0.8, num_steps = 5, p=1),#-0.8,0.8
+        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+        A.ToTensorV2(),]
+)
+
+"""

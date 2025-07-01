@@ -314,3 +314,45 @@ strong_augment= A.Compose([
 )
 
 """
+
+######Pipeline pour UNIMATCH à 0.4622######
+
+# ------------------ Datasets ------------------
+class LabeledCTScanDataset(Dataset):
+    def __init__(self, img_dir, mask_csv, transform):
+        paths = sorted(glob.glob(os.path.join(img_dir, '*.png')), key=alphanumeric_sort)
+        masks = pd.read_csv(mask_csv, index_col=0).T.values.reshape(-1,256,256).astype(np.uint8)
+        valid = [m.sum()>0 for m in masks]
+        self.image_paths = [p for p,v in zip(paths,valid) if v]
+        self.masks = masks[np.array(valid)]
+        self.transform = transform
+    def __len__(self): return len(self.image_paths)
+    def __getitem__(self, idx):
+        img = cv2.cvtColor(cv2.imread(self.image_paths[idx]), cv2.COLOR_BGR2RGB)
+        mask = self.masks[idx]
+        aug = self.transform(image=img, mask=mask)
+        return aug['image'], aug['mask']
+
+class UnlabeledCTScanDataset(Dataset):
+    def __init__(self, img_dir, mask_csv, weak_transform):
+        paths = sorted(glob.glob(os.path.join(img_dir, '*.png')), key=alphanumeric_sort)
+        masks = pd.read_csv(mask_csv, index_col=0).T.values.reshape(-1,256,256).astype(np.uint8)
+        valid = [m.sum()==0 for m in masks]
+        self.image_paths = [p for p,v in zip(paths,valid) if v]
+        self.transform = weak_transform
+    def __len__(self): return len(self.image_paths)
+    def __getitem__(self, idx):
+        img = cv2.cvtColor(cv2.imread(self.image_paths[idx]), cv2.COLOR_BGR2RGB)
+        aug = self.transform(image=img)
+        return aug['image'], self.image_paths[idx]
+
+class PseudoCTScanDataset(Dataset):
+    def __init__(self, image_paths, masks):
+        self.image_paths, self.masks = image_paths, masks
+    def __len__(self): return len(self.masks)
+    def __getitem__(self, idx):
+        img = cv2.cvtColor(cv2.imread(self.image_paths[idx]), cv2.COLOR_BGR2RGB)
+        aug = base_transform(image=img, mask=self.masks[idx])
+        #aug = strong_transform(image=img, mask=self.masks[idx])
+        return aug['image'], aug['mask']
+

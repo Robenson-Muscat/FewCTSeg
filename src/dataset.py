@@ -14,24 +14,34 @@ import pandas as pd
 #cv2.setNumThreads(0)  - To avoid slower computation
 
 
-######Pipeline pour UNIMATCH à 0.4622######
+######Pipeline pour UNIMATCH à 0.4622 et 0.4713######
 
 # ------------------ Datasets ------------------
 class LabeledCTScanDataset(Dataset):
-    def __init__(self, img_dir, mask_csv, transform):
+    def __init__(self, img_dir, mask_csv, transform=None):
+        """Basic augmentations"""
         paths = sorted(glob.glob(os.path.join(img_dir, '*.png')), key=alphanumeric_sort)
         masks = pd.read_csv(mask_csv, index_col=0).T.values.reshape(-1,256,256).astype(np.uint8)
         valid = [m.sum()>0 for m in masks]
-        self.image_paths = [p for p,v in zip(paths,valid) if v]
+        self.imgs = [p for p,v in zip(paths,valid) if v]
         self.masks = masks[np.array(valid)]
         self.transform = transform
-    def __len__(self): return len(self.image_paths)
+    def __len__(self): return len(self.imgs)
     def __getitem__(self, idx):
-        img = cv2.cvtColor(cv2.imread(self.image_paths[idx]), cv2.COLOR_BGR2RGB)
+
+        #if idx >= len(self):
+            #raise IndexError(f'Index {idx} out of range for dataset of size {len(self)}')
+        
+        img = cv2.cvtColor(cv2.imread(self.imgs[idx]), cv2.COLOR_BGR2RGB)
         #Read mask
         mask = None
         if self.masks is not None:
             mask = self.masks[idx]  #(H,W)
+            
+        #Assert that is correct shape
+        
+        assert img.shape == (256, 256, 3), f"Image shape mismatch: {img.shape}"
+        assert mask.shape == (256, 256), f"Mask shape mismatch: {mask.shape}"
             
         if self.transform is not None:
             aug = self.transform(image=img, mask=mask)
@@ -47,30 +57,47 @@ class LabeledCTScanDataset(Dataset):
             return img_tensor, mask_tensor
 
 class UnlabeledCTScanDataset(Dataset):
-    def __init__(self, img_dir, mask_csv, weak_transform):
-        #Enlever ou pas le weak_transform en paramètres
+    def __init__(self, img_dir, mask_csv, transform = None):
+        """Unlabeled images(every pixel is labeled as 0) ; Weak augmentations to apply"""
         paths = sorted(glob.glob(os.path.join(img_dir, '*.png')), key=alphanumeric_sort)
         masks = pd.read_csv(mask_csv, index_col=0).T.values.reshape(-1,256,256).astype(np.uint8)
         valid = [m.sum()==0 for m in masks]
-        self.image_paths = [p for p,v in zip(paths,valid) if v]
-        self.transform = weak_transform
-    def __len__(self): return len(self.image_paths)
+        self.imgs = [p for p,v in zip(paths,valid) if v]
+        self.transform = transform
+    def __len__(self): return len(self.imgs)
     def __getitem__(self, idx):
-        img = cv2.cvtColor(cv2.imread(self.image_paths[idx]), cv2.COLOR_BGR2RGB)
+        
+        #if idx >= len(self):
+            #raise IndexError(f'Index {idx} out of range for dataset of size {len(self)}')
+        img = cv2.cvtColor(cv2.imread(self.imgs[idx]), cv2.COLOR_BGR2RGB)
+        img_path = None
+
+        #Assert that is correct shape
+        
+        assert img.shape == (256, 256, 3), f"Image shape mismatch: {img.shape}"
+        
+        if self.imgs is not None:
+            img_path = self.imgs[idx]
         if self.transform is not None:
             aug = self.transform(image=img)
-            return aug['image'], self.image_paths[idx]
+            return aug['image'], img_path
         else:
-            return img, self.image_paths[idx]
+          img = img.astype(np.float32) / 255.0  
+          img = torch.from_numpy(img).permute(2,0,1).contiguous()  # (C,H,W)
+            return img_tensor, img_path
 
 class PseudoCTScanDataset(Dataset):
-    #Enlever ou pas le base_transform en paramètres
-    def __init__(self, image_paths, masks#base_transform or aug_transform):
-        self.image_paths, self.masks = image_paths, masks
+    def __init__(self, imgs, masks, transform = None):
+        self.imgs, self.masks = imgs, masks
     def __len__(self): return len(self.masks)
     def __getitem__(self, idx):
-        img = cv2.cvtColor(cv2.imread(self.image_paths[idx]), cv2.COLOR_BGR2RGB)
+        img = cv2.cvtColor(cv2.imread(self.imgs[idx]), cv2.COLOR_BGR2RGB)
+
+        #Assert that is correct shape
+        assert img.shape == (256, 256, 3), f"Image shape mismatch: {img.shape}"
+        assert mask.shape == (256, 256), f"Mask shape mismatch: {mask.shape}"
+        
         if self.transform is not None:
-            aug = base_transform(image=img, mask=self.masks[idx])
+            aug = transform(image=img, mask=self.masks[idx])
             return aug['image'], aug['mask']
 

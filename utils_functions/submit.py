@@ -7,7 +7,7 @@ import torch
 def count_labels_preds(labels_test):
     """Return a value counts of labels predicted on test set
     Args : 
-    labels_test (pd.DataFrame) : DataFrame of classes predicted on every pixel of test set"""
+        labels_test (pd.DataFrame) : DataFrame of classes predicted on every pixel of test set"""
 
     return pd.Series(labels_test.values.ravel()).value_counts()
 
@@ -16,10 +16,10 @@ def count_labels_preds(labels_test):
 def pred_and_save(test_loader, model,  labels_path,output_filename):
     """Predicts on test set and save the csv file at the submission format
     Args :
-    test_loader : Loader on test set 
-    model : Segmentation model
-    labels_path (str) : Path for DataFrame of labels predicted on every pixel of train set
-    output_filename : Filename path """
+        test_loader : Loader on test set 
+        model : Segmentation model
+        labels_path (str) : Path for DataFrame of labels predicted on every pixel of train set
+        output_filename : Filename path """
     
     all_preds = []
     filenames = []
@@ -28,6 +28,7 @@ def pred_and_save(test_loader, model,  labels_path,output_filename):
     
     model.eval()
     
+    # Inference and save CSV
     with torch.no_grad():
         for imgs, names in tqdm(test_loader):
             imgs = imgs.to(DEVICE)
@@ -38,6 +39,8 @@ def pred_and_save(test_loader, model,  labels_path,output_filename):
                 filenames.append(n)
                 
     labels_train = pd.read_csv(labels_path, index_col=0, header=0)
+    
+    # Create the submission DataFrame
     df = pd.DataFrame(np.stack(all_preds, axis=0), columns= labels_train.T.columns)
     df = df.T
     df.columns = filenames

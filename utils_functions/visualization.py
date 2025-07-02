@@ -39,9 +39,14 @@ def plot_slice_seg(image, mask):
 #image_paths = [p for p,v in zip(paths,valid) if v]
 #image =  cv2.cvtColor(cv2.imread(image_paths[0]), cv2.COLOR_BGR2RGB)
 #mask = masks[0]
+#plot_slice_seg(image,mask)
 
 def visu_index(index_img, index,labels_train):
-    """Visualize index mask on index_img images"""
+    """Visualize index mask on index_img images
+    Args :
+        index_img : List of integers ci
+        index (int) : index of inter 
+        labels_train (pd.DataFrame) : labels of train images"""
 
   nrows = len(index_img) //3 +1
   fig =plt.figure(figsize=(6,9))
@@ -56,12 +61,12 @@ def visu_label(index_img):
   Visualize all masks on the index_img images
   
   Args:
-    index_img : List of indexes .Ex :visu_label(range(780,800))
+    index_img : List of indexes (integrers). Ex :visu_label(range(780,800))
 
   Returns:
     ImageGrid of overlays image-masks 
         
-    """
+  """
   nrows = len(index_img) //3 +1
   fig =plt.figure(figsize=(6,9))
   grid = ImageGrid(fig,111, (nrows,3))
@@ -93,7 +98,12 @@ def visu_label(index_img):
 
 
 def visualize_transformations(dataset, idx=0):
-    """Visualize transformations on an image (idx) of the dataset class"""
+    """Visualize transformations on an image (idx) and his corresponding mask of the dataset class
+    
+    Args:
+        dataset : class Dataset of CT scans
+        idx : integer index
+    """
     dataset.transform = A.Compose([t for t in dataset.transform if not isinstance(t, (A.Normalize, ToTensorV2))])
     _, ax = plt.subplots(nrows=2, ncols=2, figsize=(10, 24))
     for i in range(2):
@@ -202,7 +212,10 @@ def visualize_cutmix(images, masks, mean=None, std=None, alpha=1.0):
 
 
 def visualize_mask(image, mask, original_image=None, original_mask=None):
-    """Visualize mask of the corresponding image side by side (equivalent of plot_slice_seg)"""
+    """Visualize mask of the corresponding image side by side (equivalent of plot_slice_seg)
+    
+    Args: 
+    """
     
     fontsize = 18
 

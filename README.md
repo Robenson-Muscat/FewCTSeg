@@ -21,12 +21,11 @@ Raw CT-scan images, without any segmented structure can be used as additional tr
 
 The test set is composed of new images with all the corresponding segmented structures, and the metric measures the ability to correctly segment and separate the different structures on an image.
 
+---
+
 ## UniMatch : a unique semi-supervised semantic segmentation technique
 
-![UniMatch](https://arxiv.org/pdf/2208.09910) is a efficient novel deep learning framework that can be used to train semantic segmentation models in medical imaging when labels are limited and uses unlabeled images as extra training data under a consistency‑regularization framework.
-
-
-[UniMatch (arXiv:2208.09910)](https://arxiv.org/abs/2208.09910) combines three consistency streams:
+[UniMatch](https://arxiv.org/pdf/2208.09910) is a efficient novel deep learning framework that can be used to train semantic segmentation models in medical imaging when labels are limited and uses unlabeled images as extra training data under a consistency‑regularization framework. This method combines three consistency streams:
 
 1. **Weak augmentation**  
    - Light perturbations(crop, rotation) → “soft” predictions.
@@ -42,20 +41,19 @@ The test set is composed of new images with all the corresponding segmented stru
 \[
 \mathcal{L} = \mathcal{L}_{sup} \;+\;\lambda\,\mathcal{L}_{fp}\;+\;\mu\,\mathcal{L}_{img}
 \]  
-- \(\mathcal{L}_{sup}\): supervised Dice on labeled data  
+- `\(\mathcal{L}_{sup}\)`: supervised Dice on labeled data  
 - \(\mathcal{L}_{fp}\): Dice between feature‑perturbed and weak‑stream outputs  
 - \(\mathcal{L}_{img}\): average Dice between each strong‑view and weak pseudo‑labels  
 - \(\lambda, \mu\): weighting hyperparameters
 
----
 
-## 🔧 Our Adaptation
+# 🔧 Our Adaptation
 
 1. **Backbone & head**  
-   - SegFormer encoder (`timm-efficientnet-b7`, pretrained) + SMP decoder.
+   - SegFormer encoder (`timm-efficientnet-b7`, pretrained)
 
 2. **Data splits**  
-   - 80 % labeled → warm‑up  
+   - 80 % labeled → training 
    - 20 % labeled → validation  
    - All empty‑mask images → unlabeled pool
 
@@ -63,7 +61,7 @@ The test set is composed of new images with all the corresponding segmented stru
    - **CutMix** patch mixing + mask mixing  
 
 4. **Pseudo‑label filtering**  
-   - Pixel‑wise confidence ≥ τ → assign class, else **ignore_index** (255)  
+   - Pixel‑wise confidence ≥ τ → assign class, else 0 "background label"
    - Keep only masks with ≥ λ fraction of confident pixels
 
 5. **Joint semi‑supervised training**  
@@ -73,24 +71,23 @@ The test set is composed of new images with all the corresponding segmented stru
      - Strong pass → image‑consistency loss  
    - LR scheduling via `ReduceLROnPlateau`
 
----
 
-## 📝 Loss Details
+# 📝 Loss Details
 
 Let  
 - \(x\): input image  
 - \(\hat{y}_w\): weak‑stream logits  
 - \(\hat{y}_{fp}\): feature‑perturbed logits  
 - \(\hat{y}_{s1}, \hat{y}_{s2}\): strong‑stream logits  
-- \(y\): ground‑truth (0…54) or ignore_index (255)  
+- \(y\): ground‑truth (0…54)  
 - \(\tilde{y} = \arg\max \text{softmax}(\hat{y}_w)\): pseudo‑label  
 
 \[
 \begin{aligned}
 \mathcal{L}_{sup} &= \mathrm{Dice}(\hat{y}_w,\,y), \\
 \mathcal{L}_{fp}  &= \mathrm{Dice}(\hat{y}_{fp},\,\tilde{y}), \\
-\mathcal{L}_{img} &= \tfrac{1}{2}\bigl[\mathrm{Dice}(\hat{y}_{s1},\,\tilde{y})
-                         + \mathrm{Dice}(\hat{y}_{s2},\,\tilde{y})\bigr], \\
+\mathcal{L}_{img} &= \tfrac{1}{2}\bigl[\mathrm{Cross-Entropy}(\hat{y}_{s1},\,\tilde{y})
+                         + \mathrm{Cross-Entropy}(\hat{y}_{s2},\,\tilde{y})\bigr], \\
 \mathcal{L} &= \mathcal{L}_{sup} + \lambda\,\mathcal{L}_{fp} + \mu\,\mathcal{L}_{img}.
 \end{aligned}
 \]

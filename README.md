@@ -46,6 +46,17 @@ The test set is composed of new images with all the corresponding segmented stru
 - \(\mathcal{L}_{img}\): average Dice between each strong‑view and weak pseudo‑labels  
 - \(\lambda, \mu\): weighting hyperparameters
 
+L = L_sup + λ · L_fp + μ · L_img
+
+where
+
+- L_sup: Supervised Dice loss on labeled data
+
+- L_fp: Consistency Dice loss between feature-perturbed and weak-stream outputs
+
+- L_img: Image-level consistency, average Dice between each strong-view and weak pseudo-labels
+
+- λ, μ: Weighting hyperparameters
 
 ### 🔧 Our Adaptation
 
@@ -75,24 +86,27 @@ The test set is composed of new images with all the corresponding segmented stru
 ### 📝 Loss Details
 
 Let  
-- \(x\): input image  
-- \(\hat{y}_w\): weak‑stream logits  
-- \(\hat{y}_{fp}\): feature‑perturbed logits  
-- \(\hat{y}_{s1}, \hat{y}_{s2}\): strong‑stream logits  
-- \(y\): ground‑truth (0…54)  
-- \(\tilde{y} = \arg\max \text{softmax}(\hat{y}_w)\): pseudo‑label  
 
-\[
-\begin{aligned}
-\mathcal{L}_{sup} &= \mathrm{Dice}(\hat{y}_w,\,y), \\
-\mathcal{L}_{fp}  &= \mathrm{Dice}(\hat{y}_{fp},\,\tilde{y}), \\
-\mathcal{L}_{img} &= \tfrac{1}{2}\bigl[\mathrm{Cross-Entropy}(\hat{y}_{s1},\,\tilde{y})
-                         + \mathrm{Cross-Entropy}(\hat{y}_{s2},\,\tilde{y})\bigr], \\
-\mathcal{L} &= \mathcal{L}_{sup} + \lambda\,\mathcal{L}_{fp} + \mu\,\mathcal{L}_{img}.
-\end{aligned}
-\]
+- **x**  
+  Input image
+- **ŷ_w**  
+  Weak‑stream logits
+- **ŷ_fp**  
+  Feature‑perturbed logits
+- **ŷ_s1**, **ŷ_s2**  
+  Strong‑stream logits
+- **y**  
+  Ground‑truth labels (0…54)
+- **ẏ = arg max softmax(ŷ_w)**  
+  Pseudo‑label from weak stream
 
 
+L_sup = Dice(ŷ_w, y)
+L_fp  = Dice(ŷ_fp, ẏ)
+L_img = 1/2 [ CE(ŷ_s1, ẏ) + CE(ŷ_s2, ẏ) ]
+
+The final loss is 
+L     = L_sup + λ·L_fp + μ·L_img
 
 
 

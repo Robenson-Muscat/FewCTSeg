@@ -68,7 +68,7 @@ The test set is composed of new images with all the corresponding segmented stru
 
 Let  
 
-**x**  an input image, **ŷ_w**  Weak‑stream logits, **ŷ_fp**  Feature‑perturbed logits, **ŷ_s1**, **ŷ_s2** Strong‑stream logits, **y**  Ground‑truth labels (0…54) and **ẏ = arg max softmax(ŷ_w)**  Pseudo‑label from weak stream
+**x**  an input image, **ŷ_w** weak‑stream logits, **ŷ_fp** feature‑perturbed logits, **ŷ_s1**, **ŷ_s2** strong‑stream logits, **y**  ground‑truth labels (0…54) and **ẏ = arg max softmax(ŷ_w)** pseudo‑label from weak stream
 
 The final loss is 
 **L  = L_sup + λ·L_fp + μ·L_img**

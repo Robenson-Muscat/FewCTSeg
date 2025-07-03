@@ -1,7 +1,7 @@
 import sys
 sys.path.append("utils_functions/")
-from sort_files import alphanumeric_sort
-#from utils_functions.sort_files import alphanumeric_sort #Function which sort alphanumerically files
+#from sort_files import alphanumeric_sort
+from utils_functions.sort_files import alphanumeric_sort #Function which sort alphanumerically files
 import glob
 import os
 import numpy as np
@@ -40,12 +40,13 @@ class LabeledCTScanDataset(Dataset):
             
         #Assert that is correct shape
         
-        assert img.shape == (256, 256, 3), f"Image shape mismatch: {img.shape}"
-        assert mask.shape == (256, 256), f"Mask shape mismatch: {mask.shape}"
+        #assert img.shape == (256, 256, 3), f"Image shape mismatch: {img.shape}"
+        #assert mask.shape == (256, 256), f"Mask shape mismatch: {mask.shape}"
             
         if self.transform is not None:
             aug = self.transform(image=img, mask=mask)
             return aug['image'], aug['mask']
+            
         else:
           img = img.astype(np.float32) / 255.0  
           img_tensor = torch.from_numpy(img).permute(2,0,1).contiguous()  # (C,H,W)
@@ -54,7 +55,7 @@ class LabeledCTScanDataset(Dataset):
           else:
               mask_tensor = torch.zeros((img.shape[0], img.shape[1]), dtype=torch.long)
 
-            return img_tensor, mask_tensor
+              return img_tensor, mask_tensor
 
 class UnlabeledCTScanDataset(Dataset):
     def __init__(self, img_dir, mask_csv, transform = None):
@@ -74,7 +75,7 @@ class UnlabeledCTScanDataset(Dataset):
 
         #Assert that is correct shape
         
-        assert img.shape == (256, 256, 3), f"Image shape mismatch: {img.shape}"
+        #assert img.shape == (256, 256, 3), f"Image shape mismatch: {img.shape}"
         
         if self.imgs is not None:
             img_path = self.imgs[idx]
@@ -84,20 +85,53 @@ class UnlabeledCTScanDataset(Dataset):
         else:
           img = img.astype(np.float32) / 255.0  
           img = torch.from_numpy(img).permute(2,0,1).contiguous()  # (C,H,W)
-            return img_tensor, img_path
+          return img_tensor, img_path
 
 class PseudoCTScanDataset(Dataset):
-    def __init__(self, imgs, masks, transform = None):
-        self.imgs, self.masks = imgs, masks
+    def __init__(self, imgs, masks, transform):
+        self.imgs, self.masks, self.transform = imgs, masks,transform
     def __len__(self): return len(self.masks)
     def __getitem__(self, idx):
         img = cv2.cvtColor(cv2.imread(self.imgs[idx]), cv2.COLOR_BGR2RGB)
 
         #Assert that is correct shape
-        assert img.shape == (256, 256, 3), f"Image shape mismatch: {img.shape}"
-        assert mask.shape == (256, 256), f"Mask shape mismatch: {mask.shape}"
+        #assert img.shape == (256, 256, 3), f"Image shape mismatch: {img.shape}"
+        #assert mask.shape == (256, 256), f"Mask shape mismatch: {mask.shape}"
         
-        if self.transform is not None:
-            aug = transform(image=img, mask=self.masks[idx])
-            return aug['image'], aug['mask']
+        
+        aug = self.transform(image=img, mask=self.masks[idx])
+        return aug['image'], aug['mask']
 
+# Test Dataset
+class CTTestDataset(Dataset):
+    def __init__(self, image_dir, transform=None):
+        self.image_paths = sorted(glob.glob(os.path.join(image_dir, "*.png")), key=alphanumeric_sort)
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        img = cv2.imread(self.image_paths[idx])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        name = os.path.basename(self.image_paths[idx])
+        if self.transform:
+            img = self.transform(image=img)['image']
+        return img, name
+
+# Test Dataset
+class TestCTScanDataset(Dataset):
+    def __init__(self, image_dir, transform=None):
+        self.image_paths = sorted(glob.glob(os.path.join(image_dir, "*.png")), key=alphanumeric_sort)
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        img = cv2.imread(self.image_paths[idx])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        name = os.path.basename(self.image_paths[idx])
+        if self.transform:
+            img = self.transform(image=img)['image']
+        return img, name

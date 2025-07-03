@@ -41,13 +41,13 @@ The test set is composed of new images with all the corresponding segmented stru
 \[
 \mathcal{L} = \mathcal{L}_{sup} \;+\;\lambda\,\mathcal{L}_{fp}\;+\;\mu\,\mathcal{L}_{img}
 \]  
-- `\(\mathcal{L}_{sup}\)`: supervised Dice on labeled data  
+- \(\mathcal{L}_{sup}\): supervised Dice on labeled data  
 - \(\mathcal{L}_{fp}\): Dice between feature‑perturbed and weak‑stream outputs  
 - \(\mathcal{L}_{img}\): average Dice between each strong‑view and weak pseudo‑labels  
 - \(\lambda, \mu\): weighting hyperparameters
 
 
-# 🔧 Our Adaptation
+### 🔧 Our Adaptation
 
 1. **Backbone & head**  
    - SegFormer encoder (`timm-efficientnet-b7`, pretrained)
@@ -72,7 +72,7 @@ The test set is composed of new images with all the corresponding segmented stru
    - LR scheduling via `ReduceLROnPlateau`
 
 
-# 📝 Loss Details
+### 📝 Loss Details
 
 Let  
 - \(x\): input image  

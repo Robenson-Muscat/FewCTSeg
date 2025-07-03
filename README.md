@@ -1,24 +1,106 @@
 # FewCTSeg
 
-## Contexte
-Les CT-scans offrent des images 3D très précises du corps humain (jusqu’à 0,5 mm de résolution) et permettent ainsi de saisir l’anatomie humaine.
-L’objectif de ce challenge est de segmenter automatiquement les structures anatomiques du corps humain, ainsi que les tumeurs, sur un CT-scan. Autrement dit, il s’agit d’identifier les formes visibles sur un CT-scan.
-Sur l’image ci-dessous, d’un CT-scan abdominal, les différentes structures ont été segmentées :
+## Context
+CT-scans offer very precise 3D images of the human body (up to 0.5 mm resolution) and thus allow to capture the human anatomy.
+The objective of this challenge is to automatically segment the anatomical structures of the human body, as well as tumors, on a CT-scan. In other words, it is about identifying the shapes visible on a CT-scan.
+In the image below, from an abdominal CT scan, the different structures have been segmented:
 
-![Exemple d'un CT scan abdominals](images/raidium_2024_1.png).
+![Example of an abdominal CT scan](images/raidium_2024_1.png).
 
-## But
+## Goal
 
-Le but de ce challenge est de segmenter les structures en utilisant leur forme, mais sans annotations exhaustives.
-Les données d’entraînement sont composées de deux types d’images:
+The goal of this challenge is to segment structures using their shape, but without exhaustive annotations.
+The training data is composed of two types of images: partially annoted CT-scan images and raw CT-scan images
 
-Des images de CT-scanner partiellement annotées, avec des masques de segmentation anatomiques de structures individuelles.
-Elles agissent comme la définition de vérité terrain de ce qu’est une structure anatomique.
-Cependant, elles ne sont pas censées être représentatives de toutes les structures possibles et leur diversité, mais peuvent toujours être utilisées comme matériau d’entraînement.
-Les masques ne contiennent pas la totalité des organes annotés sur l’ensemble du dataset. Par exemple, sur deux images abdominales,
-le masque pour A contiendra le foie et la rate, alors que le masque pour B contiendra uniquement la rate (alors que le foie est visible sur l’image).
-Des images de CT-scanner brutes, sans aucune structure segmentée
-Elles peuvent être utilisées comme matériau d’entraînement supplémentaire, dans le cadre d’un entraînement non supervisé.
-Le jeu de test est composé d’images nouvelles avec la totalité des structures segmentées correspondantes, et la métrique mesure la capacité à correctement segmenter et séparer les différentes structures sur une image.
+Partially annotated CT-scan images, with anatomical segmentation masks of individual structures, act as the field truth definition of what an anatomical structure is.
+However, they are not supposed to be representative of all possible structures and their diversity, but can still be used as training material.
+The masks do not contain all the organs annotated on the entire dataset. For example, on two abdominal images,
+the mask for A will contain the liver and spleen, while the mask for B will only contain the spleen (while the liver is visible in the image).
+
+Raw CT-scan images, without any segmented structure can be used as additional training material, in the context of unsupervised training.
+
+The test set is composed of new images with all the corresponding segmented structures, and the metric measures the ability to correctly segment and separate the different structures on an image.
+
+## UniMatch : a unique semi-supervised semantic segmentation technique
+
+![UniMatch](https://arxiv.org/pdf/2208.09910) is a efficient novel deep learning framework that can be used to train semantic segmentation models in medical imaging when labels are limited and uses unlabeled images as extra training data under a consistency‑regularization framework.
+
+
+[UniMatch (arXiv:2208.09910)](https://arxiv.org/abs/2208.09910) combines three consistency streams:
+
+1. **Weak augmentation**  
+   - Light perturbations(crop, rotation) → “soft” predictions.
+
+2. **Feature‑perturbed stream**  
+   - Dropout on encoder features → feature‑consistency loss.
+
+3. **Strong augmentations**  
+   - Two heavy views (CutMix) → image‑consistency loss  
+   - Pseudo‑labels from the weak stream guide strong‑view predictions.
+
+**Total loss** per batch:  
+\[
+\mathcal{L} = \mathcal{L}_{sup} \;+\;\lambda\,\mathcal{L}_{fp}\;+\;\mu\,\mathcal{L}_{img}
+\]  
+- \(\mathcal{L}_{sup}\): supervised Dice on labeled data  
+- \(\mathcal{L}_{fp}\): Dice between feature‑perturbed and weak‑stream outputs  
+- \(\mathcal{L}_{img}\): average Dice between each strong‑view and weak pseudo‑labels  
+- \(\lambda, \mu\): weighting hyperparameters
+
+---
+
+## 🔧 Our Adaptation
+
+1. **Backbone & head**  
+   - SegFormer encoder (`timm-efficientnet-b7`, pretrained) + SMP decoder.
+
+2. **Data splits**  
+   - 80 % labeled → warm‑up  
+   - 20 % labeled → validation  
+   - All empty‑mask images → unlabeled pool
+
+3. **Strong augmentations**  
+   - **CutMix** patch mixing + mask mixing  
+
+4. **Pseudo‑label filtering**  
+   - Pixel‑wise confidence ≥ τ → assign class, else **ignore_index** (255)  
+   - Keep only masks with ≥ λ fraction of confident pixels
+
+5. **Joint semi‑supervised training**  
+   - Combine labeled + pseudo‑labeled sets  
+   - Each batch:  
+     - Weak pass → supervised + feature‑perturbation losses  
+     - Strong pass → image‑consistency loss  
+   - LR scheduling via `ReduceLROnPlateau`
+
+---
+
+## 📝 Loss Details
+
+Let  
+- \(x\): input image  
+- \(\hat{y}_w\): weak‑stream logits  
+- \(\hat{y}_{fp}\): feature‑perturbed logits  
+- \(\hat{y}_{s1}, \hat{y}_{s2}\): strong‑stream logits  
+- \(y\): ground‑truth (0…54) or ignore_index (255)  
+- \(\tilde{y} = \arg\max \text{softmax}(\hat{y}_w)\): pseudo‑label  
+
+\[
+\begin{aligned}
+\mathcal{L}_{sup} &= \mathrm{Dice}(\hat{y}_w,\,y), \\
+\mathcal{L}_{fp}  &= \mathrm{Dice}(\hat{y}_{fp},\,\tilde{y}), \\
+\mathcal{L}_{img} &= \tfrac{1}{2}\bigl[\mathrm{Dice}(\hat{y}_{s1},\,\tilde{y})
+                         + \mathrm{Dice}(\hat{y}_{s2},\,\tilde{y})\bigr], \\
+\mathcal{L} &= \mathcal{L}_{sup} + \lambda\,\mathcal{L}_{fp} + \mu\,\mathcal{L}_{img}.
+\end{aligned}
+\]
+
+
+
+
+
+
+
+
 
 

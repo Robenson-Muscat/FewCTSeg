@@ -37,26 +37,7 @@ The test set is composed of new images with all the corresponding segmented stru
    - Two heavy views (CutMix) → image‑consistency loss  
    - Pseudo‑labels from the weak stream guide strong‑view predictions.
 
-**Total loss** per batch:  
-\[
-\mathcal{L} = \mathcal{L}_{sup} \;+\;\lambda\,\mathcal{L}_{fp}\;+\;\mu\,\mathcal{L}_{img}
-\]  
-- \(\mathcal{L}_{sup}\): supervised Dice on labeled data  
-- \(\mathcal{L}_{fp}\): Dice between feature‑perturbed and weak‑stream outputs  
-- \(\mathcal{L}_{img}\): average Dice between each strong‑view and weak pseudo‑labels  
-- \(\lambda, \mu\): weighting hyperparameters
 
-L = L_sup + λ · L_fp + μ · L_img
-
-where
-
-- L_sup: Supervised Dice loss on labeled data
-
-- L_fp: Consistency Dice loss between feature-perturbed and weak-stream outputs
-
-- L_img: Image-level consistency, average Dice between each strong-view and weak pseudo-labels
-
-- λ, μ: Weighting hyperparameters
 
 ### 🔧 Our Adaptation
 
@@ -101,12 +82,19 @@ Let
   Pseudo‑label from weak stream
 
 
-L_sup = Dice(ŷ_w, y)
-L_fp  = Dice(ŷ_fp, ẏ)
-L_img = 1/2 [ CE(ŷ_s1, ẏ) + CE(ŷ_s2, ẏ) ]
 
 The final loss is 
-L     = L_sup + λ·L_fp + μ·L_img
+L  = L_sup + λ·L_fp + μ·L_img
+
+where
+
+- L_sup: Supervised Dice loss on labeled data (L_sup = Dice(ŷ_w, y))
+
+- L_fp: Consistency Dice loss between feature-perturbed and weak-stream outputs (L_fp  = Dice(ŷ_fp, ẏ))
+
+- L_img : Average Cross-entropy between each strong‑view and weak pseudo‑labels (L_img =1/2 [ CE(ŷ_s1, ẏ) + CE(ŷ_s2, ẏ) ])
+
+- λ, μ: Weighting hyperparameters
 
 
 

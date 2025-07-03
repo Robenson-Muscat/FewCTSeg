@@ -25,7 +25,8 @@ The test set is composed of new images with all the corresponding segmented stru
 
 ## UniMatch : a unique semi-supervised semantic segmentation technique
 
-[UniMatch](https://arxiv.org/pdf/2208.09910) is a efficient novel deep learning framework that can be used to train semantic segmentation models in medical imaging when labels are limited and uses unlabeled images as extra training data under a consistency‑regularization framework. This method combines three consistency streams:
+[UniMatch](https://arxiv.org/pdf/2208.09910) is a efficient novel deep learning framework that can be used to train semantic segmentation models in medical imaging when labels are limited and uses unlabeled images as extra training data under a consistency‑regularization framework (assumption that prediction of an unlabeled exam-
+ple should be invariant to different forms of perturbations). This method combines three consistency streams:
 
 1. **Weak augmentation**  
    - Light perturbations(crop, rotation) → “soft” predictions.

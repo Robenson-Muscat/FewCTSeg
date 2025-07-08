@@ -10,6 +10,7 @@ docs/
 trash/
 ckpts/
 submissions/
+.gitignore
 
 # User-specific files
 *.rsuser

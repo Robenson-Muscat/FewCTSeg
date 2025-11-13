@@ -25,17 +25,16 @@ The test set is composed of new images with all the corresponding segmented stru
 
 ## UniMatch : a unique semi-supervised semantic segmentation technique
 
-[UniMatch](https://arxiv.org/pdf/2208.09910) is a efficient novel deep learning framework that can be used to train semantic segmentation models in medical imaging when labels are limited and uses unlabeled images as extra training data under a consistency‑regularization framework (assumption that prediction of an unlabeled exam-
-ple should be invariant to different forms of perturbations). This method combines three consistency streams:
+[UniMatch](https://arxiv.org/pdf/2208.09910) is a efficient novel deep learning framework that can be used to train semantic segmentation models in medical imaging when labels are limited and uses unlabeled images as extra training data under a consistency‑regularization framework (assumption that prediction of an unlabeled example should be invariant to different forms of perturbations). This method combines three consistency streams:
 
-1. **Weak augmentation**  
+1. **Weak stream**  
    - Light perturbations(crop, rotation) → “soft” predictions.
 
 2. **Feature‑perturbed stream**  
    - Dropout on encoder features → feature‑consistency loss.
 
-3. **Strong augmentations**  
-   - Two heavy views (CutMix) → image‑consistency loss  
+3. **Strong streams**  
+   - Two strong perturbarions from a non-determinstic augmentation(Cutout) → image‑consistency loss  
    - Pseudo‑labels from the weak stream guide strong‑view predictions.
 
 
@@ -51,36 +50,35 @@ ple should be invariant to different forms of perturbations). This method combin
    - All empty‑mask images → unlabeled pool
 
 3. **Strong augmentations**  
-   - **CutMix** patch mixing + mask mixing  
-
-4. **Pseudo‑label filtering**  
-   - Pixel‑wise confidence ≥ τ → assign class, else 0 "background label"
-   - Keep only masks with ≥ λ fraction of confident pixels
-
-5. **Joint semi‑supervised training**  
-   - Combine labeled + pseudo‑labeled sets  
-   - Each batch:  
-     - Weak pass → supervised + feature‑perturbation losses  
-     - Strong pass → image‑consistency loss  
+   - **Cutout**
+    
+4. **Pseudo‑label filtering of unlabeled images**  
+   - Pixel‑wise confidence ≥ τ → assign class
+  
+5. **First phase : Supervised training**
+   - Training with a **L_sup =Dice(y,ŷ)** with **y**  ground‑truth mask of an image **x** ,**ŷ**  predicted logits
+   - 
+6. **Seconde phase : semi‑supervised training**  
+   - Combine labeled + pseudo‑labeled sets in a mixed batch  
    - LR scheduling via `ReduceLROnPlateau`
+   - Training with a **L =0.5 ( L_sup + L_unsup)**
 
 
-### 📝 Loss Details
+### 📝 Unsupervised Loss Details
 
 Let  
 
-**x**  an input image, **ŷ_w** weak‑stream logits, **ŷ_fp** feature‑perturbed logits, **ŷ_s1**, **ŷ_s2** strong‑stream logits, **y**  ground‑truth labels (0…54) and **ẏ = arg max softmax(ŷ_w)** pseudo‑label from weak stream
+**x_u**  an input unlabeled image, **ŷ_w** weak‑stream logits, **ŷ_fp** feature‑perturbed logits, **ŷ_s1**, **ŷ_s2** strong‑stream logits and **ẏ** pseudo‑label from weak stream (Pixel‑wise confidence ≥ τ → assign class)
 
-The final loss is 
-**L  = L_sup + λ·L_fp + μ·L_img**
+**L =0.5 ( L_sup + L_unsup)**
+The unsupervised loss is
+**L_unsup  =  λ·L_fp + μ·L_s**
 
 where
 
-- L_sup: Supervised Dice loss on labeled data (L_sup = Dice(ŷ_w, y))
+- L_fp: Consistency Dice loss between feature-perturbed and weak-stream outputs (**L_fp  = CE(ŷ_fp, ẏ)**)
 
-- L_fp: Consistency Dice loss between feature-perturbed and weak-stream outputs (L_fp  = Dice(ŷ_fp, ẏ))
-
-- L_img : Average Cross-entropy between each strong‑view and weak pseudo‑labels (L_img =1/2 [ CE(ŷ_s1, ẏ) + CE(ŷ_s2, ẏ) ])
+- L_s : Average Cross-entropy between each strong‑view and weak pseudo‑labels (**L_img =1/2 [ CE(ŷ_s1, ẏ) + CE(ŷ_s2, ẏ) ]**)
 
 - λ, μ: Weighting hyperparameters
 

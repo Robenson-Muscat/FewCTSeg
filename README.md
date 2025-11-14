@@ -61,12 +61,12 @@ These three streams should probalistically as close as possible to output a simi
    - We optionally report `fraction_kept` per batch/epoch for monitoring.
   
 5. **First phase : Supervised training**
-   - Training with a $L_sup =Dice(y,ŷ)$ with $y$ ground‑truth mask and $ŷ$  predicted logits of a labeled image $x$
+   - Training with a $L_{sup} =Dice(y,ŷ)$ with $y$ ground‑truth mask and $ŷ$  predicted logits of a labeled image $x$
    - 
 6. **Seconde phase : semi‑supervised training**  
    - Combine labeled + pseudo‑labeled sets in a mixed batch  
    - LR scheduling via `ReduceLROnPlateau`
-   - Training with a $L =0.5 ( L_sup + L_unsup)$
+   - Training with a $L =0.5 ( L_{sup} + L_{unsup})$
 
 
 ### 📝 Unsupervised Loss Details
@@ -77,13 +77,13 @@ $x_u$  an input unlabeled image, $ŷ_w$ weak‑stream logits, $ŷ_{fp}$ feature�
 
 
 The unsupervised loss is
-$L_unsup  =  λ·L_fp + μ·L_s$
+$L_{unsup}  =  λ·L_{fp} + μ·L_s$
 
 where
 
-- L_fp:  Cross-entropy loss between feature-perturbed logits and weak pseudo‑labels ($L_{fp}  = CE(ŷ_{fp}, ẏ)$)
+- $L_{fp}$:  Cross-entropy loss between feature-perturbed logits and weak pseudo‑labels ($L_{fp}  = CE(ŷ_{fp}, ẏ)$)
 
-- L_s : Average Cross-entropy between each strong‑view and weak pseudo‑labels ($L_{img} =0.5 [CE(ŷ_{s1}, ẏ) + CE(ŷ_{s2}, ẏ)]$)
+- $L_s$ : Average Cross-entropy between each strong‑view and weak pseudo‑labels ($L_{img} =0.5 [CE(ŷ_{s1}, ẏ) + CE(ŷ_{s2}, ẏ)]$)
 
 - λ, μ: Weighting hyperparameters
 

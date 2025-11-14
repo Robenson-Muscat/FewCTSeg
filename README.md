@@ -83,14 +83,21 @@ where
 
 - L_fp:  Cross-entropy loss between feature-perturbed logits and weak pseudo‑labels (**L_fp  = CE(ŷ_fp, ẏ)**)
 
-- L_s : Average Cross-entropy between each strong‑view and weak pseudo‑labels (**L_img =1/2 [ CE(ŷ_s1, ẏ) + CE(ŷ_s2, ẏ) ]**)
+- L_s : Average Cross-entropy between each strong‑view and weak pseudo‑labels ($L_img =0.5 [ CE(ŷ_s1, ẏ) + CE(ŷ_s2, ẏ) ]$)
 
 - λ, μ: Weighting hyperparameters
 
 
+Loss:
+[
+L = 0.5 \cdot (L_{sup} + L_{unsup})
+]
+with
+[
+L_{unsup} = \lambda \cdot L_{fp} + \mu \cdot L_{s}
+]
+where
 
-
-
-
-
-
+* (L_{sup}) = supervised Dice (or CE) on labeled samples;
+* (L_{fp} = CE(\hat{y}_{fp}, \tilde{y})) (feature-perturbed logits vs pseudo-labels);
+* (L_{s} = \frac{1}{2}(CE(\hat{y}*{s1},\tilde{y}) + CE(\hat{y}*{s2},\tilde{y}))) (strong-view image consistency).

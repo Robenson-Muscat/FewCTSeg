@@ -61,43 +61,29 @@ These three streams should probalistically as close as possible to output a simi
    - We optionally report `fraction_kept` per batch/epoch for monitoring.
   
 5. **First phase : Supervised training**
-   - Training with a **L_sup =Dice(y,ŷ)** with **y**  ground‑truth mask and **ŷ**  predicted logits of a labeled image **x**
+   - Training with a $L_sup =Dice(y,ŷ)$ with $y$ ground‑truth mask and $ŷ$  predicted logits of a labeled image $x$
    - 
 6. **Seconde phase : semi‑supervised training**  
    - Combine labeled + pseudo‑labeled sets in a mixed batch  
    - LR scheduling via `ReduceLROnPlateau`
-   - Training with a **L =0.5 ( L_sup + L_unsup)**
+   - Training with a $L =0.5 ( L_sup + L_unsup)$
 
 
 ### 📝 Unsupervised Loss Details
 
 Let  
 
-**x_u**  an input unlabeled image, **ŷ_w** weak‑stream logits, **ŷ_fp** feature‑perturbed logits, **ŷ_s1**, **ŷ_s2** strong‑stream logits and **ẏ** pseudo‑label from weak stream (Pixel‑wise confidence ≥ τ → assign class).
+$x_u$  an input unlabeled image, $ŷ_w$ weak‑stream logits, $ŷ_{fp}$ feature‑perturbed logits, $ŷ_{s1}$, $ŷ_{s2}$ strong‑stream logits and $ẏ$ pseudo‑label from weak stream (Pixel‑wise confidence ≥ τ → assign class).
 
 
 The unsupervised loss is
-**L_unsup  =  λ·L_fp + μ·L_s**
+$L_unsup  =  λ·L_fp + μ·L_s$
 
 where
 
-- L_fp:  Cross-entropy loss between feature-perturbed logits and weak pseudo‑labels (**L_fp  = CE(ŷ_fp, ẏ)**)
+- L_fp:  Cross-entropy loss between feature-perturbed logits and weak pseudo‑labels ($L_{fp}  = CE(ŷ_{fp}, ẏ)$)
 
-- L_s : Average Cross-entropy between each strong‑view and weak pseudo‑labels ($L_img =0.5 [ CE(ŷ_s1, ẏ) + CE(ŷ_s2, ẏ) ]$)
+- L_s : Average Cross-entropy between each strong‑view and weak pseudo‑labels ($L_{img} =0.5 [CE(ŷ_{s1}, ẏ) + CE(ŷ_{s2}, ẏ)]$)
 
 - λ, μ: Weighting hyperparameters
 
-
-Loss:
-[
-L = 0.5 \cdot (L_{sup} + L_{unsup})
-]
-with
-[
-L_{unsup} = \lambda \cdot L_{fp} + \mu \cdot L_{s}
-]
-where
-
-* (L_{sup}) = supervised Dice (or CE) on labeled samples;
-* (L_{fp} = CE(\hat{y}_{fp}, \tilde{y})) (feature-perturbed logits vs pseudo-labels);
-* (L_{s} = \frac{1}{2}(CE(\hat{y}*{s1},\tilde{y}) + CE(\hat{y}*{s2},\tilde{y}))) (strong-view image consistency).

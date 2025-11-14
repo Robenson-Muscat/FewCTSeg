@@ -81,9 +81,9 @@ $L_{unsup}  =  λ·L_{fp} + μ·L_s$
 
 where
 
-- $L_{fp}$:  Cross-entropy loss between feature-perturbed logits and weak pseudo‑labels ($L_{fp}  = CE(ŷ_{fp}, ẏ)$)
+- $L_{fp}$:  Cross-entropy loss between feature-perturbed logits and weak pseudo‑labels : $L_{fp}  = CE(ŷ_{fp}, ẏ)$
 
-- $L_s$ : Average Cross-entropy between each strong‑view and weak pseudo‑labels ($L_{img} =0.5 [CE(ŷ_{s1}, ẏ) + CE(ŷ_{s2}, ẏ)]$)
+- $L_s$ : Average Cross-entropy between each strong‑view and weak pseudo‑labels : $L_{s} =0.5 [CE(ŷ_{s1}, ẏ) + CE(ŷ_{s2}, ẏ)]$
 
 - λ, μ: Weighting hyperparameters
 

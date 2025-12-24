@@ -8,9 +8,9 @@ def pseudo_targets_from_logits(logits_w, tau=0.95, ignore_index=255):
      Convert weak logits into hard pseudo-labels, masking low-confidence pixels.
 
     Args:
-        logits_w: Tensor of shape (B, C, H, W), raw model outputs (no softmax applied).
+        logits_w: Tensor of shape (B, Cl, H, W), raw model outputs (no softmax applied).
         tau: Confidence threshold; pixels below this confidence are ignored.
-        ignore_index: Label assigned to ignored pixels (e.g., 255).
+        ignore_index: Label assigned to ignored pixels.
 
     Returns:
         target: LongTensor (B, H, W) containing predicted classes per pixel.
@@ -57,7 +57,7 @@ def strong_perturbation(batch_imgs_tensor, strong_transform, mean,std, device):
     Args:
         batch_imgs_tensor: Float tensor of shape (B, C, H, W),
                            normalized with given mean/std.
-        strong_transform: Albumentations Compose object defining the strong aug.
+        strong_transform: Albumentations Compose object defining the strong perturbation.
         device: Output device.
         mean, std: Normalization parameters used during training.
 
@@ -78,34 +78,30 @@ def weak_perturbation(batch_imgs_tensor, weak_transform,device):
     """
     Applies a weak geometric perturbation to a batch of raw images
     Args:
-        weak_transform: Albumentations Compose object defining the weak aug.
+        weak_transform: Albumentations Compose object defining the weak perturbation.
         device: Output device.
 
     Returns:
         batch_w: Normalized tensor (B, C, H, W) ready for model input.
     """
     batch_imgs_np = batch_imgs_tensor.cpu().numpy()
-    batch_w = torch.stack([weak_transform(image=im.astype(np.uint8))['image'] for im in batch_imgs_np]).to(device)  # (B,C,H,W)
+    batch_w = torch.stack([weak_transform(image=im.astype(np.uint8))['image'] for im in batch_imgs_np]).to(device)  
     return batch_w
 
-def feature_perturbation(model, batch_w,dropout):
+def feature_perturbation(model, feat_w,dropout):
     """
     Applies a feature-level perturbation to the last encoder feature map
     (dropout-style regularization) and computes the resulting logits.
 
     Args:
-        model: segmentation model (e.g., SMP SegFormer).
-        batch_w: Normalized input tensor (B, C, H, W).
+        model: segmentation model.
+        feat_w : list of features maps.
         drop2d: nn.Dropout2d layer used for feature perturbation.
 
     Returns:
-        logits_fp: Tensor of perturbed logits (B, C, H, W).
+        logits_fp: Tensor of perturbed logits (B, Cl, H, W).
 
     """
-    # weak forward -> get features from encoder
-    feat_w = model.encoder(batch_w)  # list of features
-    logits_w = model.segmentation_head(model.decoder(feat_w))  # weak logits
-
     # feature perturbation on last feature map
     feat_fp = [f.clone() for f in feat_w]
     feat_fp[-1] = dropout(feat_fp[-1])

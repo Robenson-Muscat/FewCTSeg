@@ -21,7 +21,7 @@ def extract_embeddings(model, dataloader,device):
 
 
 def save_embeddings_to_csv(embeddings, labels, filename):
-    # Ou save in a file handling torch tensors or h5 
+    # Or save in a file handling torch tensors or h5 
     
     data = pd.DataFrame(embeddings)
     data['label'] = labels  

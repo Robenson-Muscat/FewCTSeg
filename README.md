@@ -44,7 +44,7 @@ These three streams should be probalistically as close as possible to output a s
 ### 🔧 Our Adaptation
 
 1. **Backbone & head**  
-   - We use a SegFormer architecture (pretrained)
+   - We use a SegFormer architecture (pretrained on ImageNet)
 
 2. **Data splits**  
    - All images with empty masks are assigned to the unlabeled pool, while images with non-empty masks go to the labeled pool.
@@ -62,7 +62,7 @@ These three streams should be probalistically as close as possible to output a s
     
 6. **Seconde phase : semi‑supervised training**  
    - In the second phase, we combine the labeled and pseudo-labeled sets into a mixed batch. 
-   - A lower learning rate of $1e-4$ is used, with scheduling managed by `ReduceLROnPlateau`. 
+   - A lower learning rate of $1e^{-4}$ is used, with scheduling managed by `ReduceLROnPlateau`. 
    - Training with the following loss : $L =0.5 ( L_{sup} + L_{unsup})$.
 
 
@@ -71,8 +71,6 @@ These three streams should be probalistically as close as possible to output a s
 Let  
 
 $x_u$ be an input unlabeled image, $ŷ_w$ the weak‑stream logits, $ŷ_{fp}$ the feature‑stream logits, $ŷ_{s1}$, $ŷ_{s2}$ the strong‑stream logits and $ẏ$ the weak pseudo-labels (generated from $ŷ_w$ by assigning a class when the pixel-wise confidence is greater than or equal to τ, Low-confidence pixels are set to `ignore_index`).
-
-                .
 
 The unsupervised loss is
 $L_{unsup}  =  λ·L_{fp} + μ·L_s$

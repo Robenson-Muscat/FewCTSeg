@@ -36,7 +36,7 @@ def denormalize(tensor,mean,std):
 
 
 
-def visualize_test_prediction(index, model, dataset, device):
+def visualize_test_prediction(index, model, dataset, device, display=False):
     """
     Display one test image and the model's predicted mask side-by-side.
 
@@ -45,6 +45,7 @@ def visualize_test_prediction(index, model, dataset, device):
         model (torch.nn.Module): trained model
         dataset (Dataset): instance of TestCTScanDataset
         device (torch.device): CPU or GPU
+        display : True if you want to print the predicted labels
 
 
     Example : 
@@ -68,6 +69,8 @@ def visualize_test_prediction(index, model, dataset, device):
         pred_mask = torch.argmax(logits, dim=1).squeeze(0).cpu().numpy().astype(np.uint8)
 
     img_np = denormalize(img_tensor)
+    if display is True:
+        print(np.unique(pred_mask))
 
     # Visualisation
     plt.figure(figsize=(10, 5))

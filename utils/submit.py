@@ -47,4 +47,4 @@ def pred_and_save(test_loader, model,  labels_path,output_filename):
     
     # Save to CSV
     df.to_csv(output_filename, index=True)
-    print(f"Test predictions saved to {output_csv}")
+    print(f"Test predictions saved")

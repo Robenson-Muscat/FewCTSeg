@@ -34,8 +34,6 @@ def denormalize(tensor,mean,std):
     return tensor
 
 
-
-
 def visualize_test_prediction(index, model, dataset, device, display=False):
     """
     Display one test image and the model's predicted mask side-by-side.
@@ -87,9 +85,6 @@ def visualize_test_prediction(index, model, dataset, device, display=False):
     plt.show()
 
 
-
-
-
 def plot_slice_seg(dataset, index):
     """ 
     Plot a labeled slice: original image and corresponding mask.
@@ -133,14 +128,19 @@ def visualize_grid_masks(index_img,dataset):
     fig =plt.figure(figsize=(15,9))
     grid = ImageGrid(fig,111, (nrows,10))
     for ax,im in zip(grid, index_img):
+      if dataset.transform is not None:
         aug = dataset.transform(image=cv2.cvtColor(cv2.imread(dataset.image_paths[im]), cv2.COLOR_BGR2RGB), mask=dataset.masks[im])
         img, mask = aug['image'], aug['mask']
-
         img=denormalize(img)
-        ax.imshow(img, cmap="gray")
-        seg_masked = np.ma.masked_where(mask.reshape((256, 256)) == 0,(mask.reshape((256, 256))))
-        #seg_masked = np.ma.masked_where(dataset.masks[im].reshape((256, 256)) == 0,(dataset.masks[im].reshape((256, 256))))
-        ax.imshow(seg_masked)
+      else:
+        img_tensor,mask=dataset[im]
+        #mask = dataset.masks[im]
+        img = img_tensor.permute(1, 2, 0).cpu().numpy()
+        img = np.clip(img, 0, 1)  # Clip values to valid range
+      ax.imshow(img, cmap="gray")
+      seg_masked = np.ma.masked_where(mask.reshape((256, 256)) == 0,(mask.reshape((256, 256))))
+      #seg_masked = np.ma.masked_where(dataset.masks[im].reshape((256, 256)) == 0,(dataset.masks[im].reshape((256, 256))))
+      ax.imshow(seg_masked)
 
 
 def visualize_randomcrop(full_lab, idx, crop_size=(256,256), scale=(0.2,1.0), ratio=(0.75, 1.3333)):

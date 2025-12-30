@@ -273,3 +273,27 @@ def visualize_specific_label(label,dataset):
 
 
 
+def get_labels_by_index(index: int, dataset) -> list:
+    """
+    Return list of unique labels present in the mask at a given dataset index.
+
+    Args:
+        index: index of the sample in the dataset.
+        dataset: Labeled Dataset object .
+
+    Returns:
+        list of labels present in the mask.
+    """
+
+    # Retrieve the mask depending on dataset structure
+    if hasattr(dataset, "masks"):
+        mask = dataset.masks[index]
+    else:
+        _, mask = dataset[index]
+
+    # Flatten and return unique labels
+    labels = np.unique(mask)
+    return labels.tolist()
+
+
+

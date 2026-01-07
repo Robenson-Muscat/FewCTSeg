@@ -118,10 +118,13 @@ def visualize_grid_masks(index_img,dataset):
     Display a grid of images and their masks (overlaid).
       
     Args:
-            index_img : List of indexes .Ex :visu_label(range(780,800))
+            index_img : List of indexes
             dataset (Dataset)
+            
     Returns:
             None (shows matplotlib figure) 
+    Example :
+            visualize_grid_masks([389,390],full_lab)
 
     """
     nrows = len(index_img) //10 +1

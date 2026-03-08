@@ -9,7 +9,7 @@ __all__ = [
     "free_gpu",
     "set_seed",
     "alphanumeric_sort",
-    "compute_per_class_dice,
+    "compute_per_class_dice",
     "pred_and_save"
     
 ]   

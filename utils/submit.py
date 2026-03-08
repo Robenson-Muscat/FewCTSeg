@@ -2,14 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import torch
-
-
-def count_labels_preds(labels_test):
-    """Return a value counts of labels predicted on test set
-    Args : 
-        labels_test (pd.DataFrame) : DataFrame of classes predicted on every pixel of test set"""
-
-    return pd.Series(labels_test.values.ravel()).value_counts()
+from tqdm import tqdm
 
 
 

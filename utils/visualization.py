@@ -1,22 +1,33 @@
+import os
+import cv2
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
-from torchvision.utils import make_grid
-from torchvision.datasets import ImageFolder
-from mpl_toolkits.axes_grid1 import ImageGrid
-
-from torch.utils.data import DataLoader, Dataset
-from torchvision import models, datasets, transforms
-import os
-import glob
-from PIL import Image
-from typing import Tuple, List, Optional, Union
-import cv2
+import pandas as pd
 import albumentations as A
-from tqdm import tqdm
+import matplotlib.pyplot as plt
+import torch.nn.functional as F
+
+from collections import Counter
+from torch.utils.data import Dataset
+from torchvision import transforms
+
+from mpl_toolkits.axes_grid1 import ImageGrid
+from matplotlib.colors import ListedColormap
+
+MEAN = np.array([0.485, 0.456, 0.406])
+STD  = np.array([0.229, 0.224, 0.225])
+
+#Legend colors
+base_cmap = plt.cm.get_cmap("tab20", NUM_CLASSES)
+colors = base_cmap(np.arange(NUM_CLASSES))
+colors[0] = [0, 0, 0, 1] # background in black
+seg_cmap = ListedColormap(colors)
 
 
-def denormalize(tensor,mean,std):
+
+
+
+def denormalize(tensor,mean=MEAN,std=STD):
     """
     Denormalize a tensor and return HWC numpy image in [0,1].
 
@@ -34,6 +45,8 @@ def denormalize(tensor,mean,std):
     return tensor
 
 
+
+
 def visualize_test_prediction(index, model, dataset, device, display=False):
     """
     Display one test image and the model's predicted mask side-by-side.
@@ -45,18 +58,16 @@ def visualize_test_prediction(index, model, dataset, device, display=False):
         device (torch.device): CPU or GPU
         display : True if you want to print the predicted labels
 
-
-    Example : 
-    #
-    test_ds = CTTestDataset(image_dir=os.path.join(PATH, "test-images"), transform=base_transform)
+    Example :
+    test_ds = TestCTScanDataset(image_dir=os.path.join(PATH, "test-images"), transform=base_transform)
     model.load_state_dict(torch.load(..., map_location=DEVICE,weights_only=True))
-    visualize_test_prediction(index=113, model=model, dataset=test_ds)
+    visualize_test_prediction(index=113, model=model, dataset=test_ds,device = DEVICE)
 
     """
     model.eval()
     pass
 
-    
+
     img_tensor, _ = dataset[index]
     name = os.path.basename(dataset.image_paths[index])
     img = img_tensor.unsqueeze(0).to(device)
@@ -66,19 +77,30 @@ def visualize_test_prediction(index, model, dataset, device, display=False):
         logits = model(img)
         pred_mask = torch.argmax(logits, dim=1).squeeze(0).cpu().numpy().astype(np.uint8)
 
-    img_np = denormalize(img_tensor)
+    img = denormalize(img_tensor)
+    seg_masked = np.ma.masked_where(pred_mask.reshape((256, 256)) == 0, (pred_mask.reshape((256, 256))))
     if display is True:
         print(np.unique(pred_mask))
 
-    # Visualisation
+    # Visualization
+
     plt.figure(figsize=(10, 5))
+    
     plt.subplot(1, 2, 1)
-    plt.imshow(img_np)
+    plt.imshow(img)
     plt.title(f"Image : {name}")
     plt.axis("off")
 
     plt.subplot(1, 2, 2)
-    plt.imshow(pred_mask, cmap="nipy_spectral") 
+    plt.imshow(img)
+    plt.imshow(
+        seg_masked,
+        cmap=seg_cmap,
+        vmin=0,
+        vmax=NUM_CLASSES - 1,
+        alpha=0.5,   
+        interpolation="nearest"
+        )
     plt.title("Predicted mask")
     plt.axis("off")
 
@@ -93,9 +115,6 @@ def plot_slice_seg(dataset, index):
         dataset: instance of a labeled dataset that returns (image_tensor, mask).
                  image_tensor may be normalized tensor (C,H,W) or numpy HWC.
         index: index to plot.
-
-    Returns:
-        (img_np, mask_np)
     """
    
     fig, axes = plt.subplots(1, 2)
@@ -104,176 +123,142 @@ def plot_slice_seg(dataset, index):
     image = denormalize(image_tensor)
 
     
-    axes[0].imshow(image, cmap="gray")
-    axes[1].imshow(image, cmap="gray")
+    axes[0].imshow(image)
+    axes[0].axis("off")
     seg_masked = np.ma.masked_where(mask.reshape((256, 256)) == 0, (mask.reshape((256, 256))))
-    axes[1].imshow(seg_masked, cmap="tab20")
-    plt.axis("off")
+    axes[1].imshow(image)
+    axes[1].imshow(
+        seg_masked,
+        cmap=seg_cmap,
+        vmin=0,
+        vmax=NUM_CLASSES - 1,
+        alpha=0.5,  
+        interpolation="nearest"
+        )
+    axes[1].axis("off")
 
+  
 
-
-def visualize_grid_masks(index_img,dataset):
-    
-    """ 
+def visualize_grid_masks(index_img, dataset):
+    """
     Display a grid of images and their masks (overlaid).
-      
+
     Args:
-            index_img : List of indexes
-            dataset (Dataset)
-            
+        index_img : List of indexes
+        dataset (Dataset)
+
     Returns:
-            None (shows matplotlib figure) 
+        None (shows matplotlib figure)
     Example :
-            visualize_grid_masks([389,390],full_lab)
+        visualize_grid_masks([389,390], full_lab)
+    """ 
 
-    """
-    nrows = len(index_img) //10 +1
-    fig =plt.figure(figsize=(15,9))
-    grid = ImageGrid(fig,111, (nrows,10))
-    for ax,im in zip(grid, index_img):
-      if dataset.transform is not None:
-        aug = dataset.transform(image=cv2.cvtColor(cv2.imread(dataset.image_paths[im]), cv2.COLOR_BGR2RGB), mask=dataset.masks[im])
-        img, mask = aug['image'], aug['mask']
-        img=denormalize(img)
-      else:
-        img_tensor,mask=dataset[im]
-        #mask = dataset.masks[im]
-        img = img_tensor.permute(1, 2, 0).cpu().numpy()
-        img = np.clip(img, 0, 1)  # Clip values to valid range
-      ax.imshow(img, cmap="gray")
-      seg_masked = np.ma.masked_where(mask.reshape((256, 256)) == 0,(mask.reshape((256, 256))))
-      #seg_masked = np.ma.masked_where(dataset.masks[im].reshape((256, 256)) == 0,(dataset.masks[im].reshape((256, 256))))
-      ax.imshow(seg_masked)
+    nrows = len(index_img) // 10 + 1
+    fig = plt.figure(figsize=(24,8*nrows))
+    grid = ImageGrid(fig, 111, (nrows, 10))
 
+    for ax, im in zip(grid, index_img):
+        if dataset.transform is not None:
+            aug = dataset.transform(image=cv2.cvtColor(cv2.imread(dataset.image_paths[im]), cv2.COLOR_BGR2RGB), mask=dataset.masks[im])
+            img, mask = aug['image'], aug['mask']
+            img = denormalize(img)
+        else:
+            img_tensor, mask = dataset[im]
+            img = img_tensor.permute(1, 2, 0).cpu().numpy()
+            img = np.clip(img, 0, 1)  # Clip values to valid range
+        ax.axis("off")
+        ax.imshow(img)
 
-def visualize_randomcrop(full_lab, idx, crop_size=(256,256), scale=(0.2,1.0), ratio=(0.75, 1.3333)):
-    """
-    Show original image+mask and their RandomResizedCrop result (image+mask).
+        
+        ax.imshow(
+            mask.reshape(256,256),
+            cmap=seg_cmap,
+            vmin=0,
+            vmax=NUM_CLASSES - 1,
+            alpha=0.5,   
+            interpolation="nearest"
+        )
 
-    Args:
-        full_lab_dataset: LabeledCTScanDataset instance.
-        idx: index of the sample to crop
-        crop_size: (height, width)
-        scale, ratio: parameters forwarded to albumentations.RandomResizedCrop
-
-    Returns:
-        img_orig, mask_orig, img_crop, mask_crop (numpy arrays)
-    """
-   
-    if not hasattr(full_lab, 'image_paths') or not hasattr(full_lab, 'masks'):
-        raise ValueError("full_lab must have `image_paths` and `masks` (LabeledCTScanDataset).")
-    if idx < 0 or idx >= len(full_lab.image_paths):
-        raise IndexError(f'Index {idx} out of range for dataset of size {len(full_lab.image_paths)}')
-
-    #
-    img_path = full_lab.image_paths[idx]
-    img_bgr = cv2.imread(img_path)
-    if img_bgr is None:
-        raise RuntimeError(f"Impossible to process: {img_path}")
-    img_orig = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    mask_orig = full_lab.masks[idx].astype(np.uint8)
-
-    h, w = crop_size
-    try:
-        rr = A.Compose([ A.RandomResizedCrop(size=(h, w), scale=scale, ratio=ratio, p=1.0) ])
-    except Exception:
-        # fallback pour anciennes versions d'albumentations
-        rr = A.Compose([ A.RandomResizedCrop(height=h, width=w, scale=scale, ratio=ratio, p=1.0) ])
-
-    # 
-    augmented = rr(image=img_orig, mask=mask_orig)
-    img_crop = augmented['image']
-    mask_crop = augmented['mask'].astype(np.uint8)
-
-    # affichage 2x2
-    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-    ax = axes.ravel()
-
-    ax[0].imshow(img_orig)
-    ax[0].set_title(f"Original image")
-    ax[0].axis('off')
-
-    im0 = ax[1].imshow(mask_orig, interpolation='nearest')
-    ax[1].set_title(f"Original mask")
-    ax[1].axis('off')
-    plt.colorbar(im0, ax=ax[1], fraction=0.046, pad=0.01)
-
-    ax[2].imshow(img_crop)
-    ax[2].set_title(f"Cropped image")
-    ax[2].axis('off')
-
-    im1 = ax[3].imshow(mask_crop, interpolation='nearest')
-    ax[3].set_title(f"Cropped mask")
-    ax[3].axis('off')
-    plt.colorbar(im1, ax=ax[3], fraction=0.046, pad=0.01)
-
-    plt.tight_layout()
     plt.show()
 
 
-
-##
-
-def get_indices_by_label(label: int, mask_df) -> list:
-
+def visualize_specific_label(labels, dataset, max_images=30, mask_only=True):
     """
-    Return list of indices of images that contain `label` in their mask.
+    Visualize images containing specific label(s) and highlight only those labels.
 
     Args:
-        label: integer label to search for.
-        masks_array: array of shape (N, H, W) or (N, H*W).
+        labels (int or list[int]): label(s) to visualize
+        dataset (LabeledCTScanDataset)
+        max_images (int): maximum number of images to display
+        mask_only (bool): if True, only show selected labels in the mask
 
-    Returns:
-        list of integer indices.
-    Ex :
-        get_indices_by_label(26, full_lab.masks)
-    """
-    
-    #masks = mask_df.values
-    masks=mask_df.reshape(-1,256*256)
-    # Boolean mask of images with the label
-    mask_contains = (masks == label).any(axis=1)
-    # Return indices of True
-    return mask_contains.nonzero()[0].tolist()
-
-
-
-def visualize_specific_label(label,dataset):
-    """
-     Visualize all images in `dataset` that contain a specific label.
-
-    Args:
-        label: integer label to display
-        dataset: Labeled dataset
-
-    Example :
+    Example:
         visualize_specific_label(7, full_lab)
+        visualize_specific_label([37, 38], full_lab)
     """
-    index_img = get_indices_by_label(label, dataset.masks)
-    nrows = len(index_img) //3 +1
-    fig =plt.figure(figsize=(6,9))
-    grid = ImageGrid(fig,111, (nrows,3))
-    
-    for ax,im in zip(grid, index_img):
+    if isinstance(labels, int):
+        labels = [labels]
+
+    index_img = get_indices_by_labels_fast(labels, dataset)
+    index_img = index_img[:max_images]
+
+    if len(index_img) == 0:
+        print(f"No image with labels {labels}")
+        return
+
+    ncols = 3
+    nrows = len(index_img) // ncols + 1
+
+    fig = plt.figure(figsize=(12, 4 * nrows))
+    grid = ImageGrid(fig, 111, (nrows, ncols))
+
+    for ax, im in zip(grid, index_img):
+
         if dataset.transform is not None:
-          aug = dataset.transform(image=cv2.cvtColor(cv2.imread(dataset.image_paths[im]), cv2.COLOR_BGR2RGB), mask=dataset.masks[im])
-          img, mask = aug['image'], aug['mask']
-
-          img=denormalize(img)
+            aug = dataset.transform(
+                image=cv2.cvtColor(
+                    cv2.imread(dataset.image_paths[im]), cv2.COLOR_BGR2RGB
+                ),
+                mask=dataset.masks[im]
+            )
+            img, mask = aug["image"], aug["mask"]
+            img = denormalize(img)
         else:
-          img_tensor,mask=dataset[im]
-          
-          #mask = dataset.masks[im]
-          img = img_tensor.permute(1, 2, 0).cpu().numpy()
-    
-          img = np.clip(img, 0, 1)  # Clip values to valid range
+            img_tensor, mask = dataset[im]
+            img = img_tensor.permute(1, 2, 0).cpu().numpy()
+            img = np.clip(img, 0, 1)
 
-        ax.imshow(img, cmap="gray")
-        seg_masked = np.ma.masked_where(mask.reshape((256, 256)) !=label,(mask.reshape((256, 256))))
-        #seg_masked = np.ma.masked_where(dataset.masks[im].reshape((256, 256)) == 0,(dataset.masks[im].reshape((256, 256))))
-        ax.imshow(seg_masked,cmap="hsv")
+        ax.axis("off")
+        ax.imshow(img)
+
+        if mask_only:
+            # Mask only on the requested labels
+            mask_sel = np.zeros_like(mask)
+            for lbl in labels:
+                mask_sel[mask == lbl] = lbl
+        else:
+            mask_sel = mask
+
+        ax.imshow(
+            mask_sel.reshape(256, 256),
+            cmap=seg_cmap,
+            vmin=0,
+            vmax=NUM_CLASSES - 1,
+            alpha=0.5,
+            interpolation="nearest"
+        )
+
+    plt.show()
 
 
+def get_indices_by_labels_fast(labels, dataset):
+    masks = dataset.masks.reshape(len(dataset.masks), -1)
+    idx = np.ones(len(masks), dtype=bool)
+
+    for label in labels:
+        idx &= (masks == label).any(axis=1)
+
+    return np.where(idx)[0].tolist()
 
 
 def get_labels_by_index(index: int, dataset) -> list:
@@ -298,5 +283,188 @@ def get_labels_by_index(index: int, dataset) -> list:
     labels = np.unique(mask)
     return labels.tolist()
 
+
+
+
+def top_cooccurring_labels(label, dataset, top_k=3, exclude_background=True):
+    """
+    Return the top-k labels that most frequently co-occur with a given label
+    in the same image, along with their occurrence counts.
+
+    Args:
+        label (int): target label
+        dataset (LabeledCTScanDataset)
+        top_k (int): number of top co-occurring labels to return
+        exclude_background (bool): exclude label 0 from results
+
+    Returns:
+        list of tuples: [(label_i, count_i), ...]
+
+    Example:
+        top3 = top_cooccurring_labels(51, full_lab)
+    """
+
+    cooccurrence_counter = Counter()
+
+    masks = dataset.masks  # (N, H, W)
+
+    for mask in masks:
+        labels_present = set(np.unique(mask))
+
+        # If the target label is not present → skip
+        if label not in labels_present:
+            continue
+
+        # Remove the target label itself
+        labels_present.discard(label)
+
+        if exclude_background:
+            labels_present.discard(0)
+
+        # Increment counters
+        for lbl in labels_present:
+            cooccurrence_counter[lbl] += 1
+
+    return cooccurrence_counter.most_common(top_k)
+
+
+
+
+def compute_mean_area_per_label(dataset, num_classes=55, ignore_index=0):
+    """
+    Compute mean area per label
+    Example :
+        df_stats_more = compute_mean_area_per_label(full_lab)
+        df_stats_more.head(10)
+    """
+    H, W = dataset.masks[0].shape
+    total_pixels = H * W
+
+    stats = {}
+
+    for label in range(num_classes):
+        if label == ignore_index:
+            continue
+
+        areas = []
+        for mask in dataset.masks:
+            pix = np.sum(mask == label)
+            if pix > 0:
+                areas.append(pix / total_pixels)
+
+        if len(areas) > 0:
+            stats[label] = {
+                "mean": np.mean(areas)*100,
+                "median": np.median(areas)*100,
+                "count": len(areas)
+            }
+
+    return pd.DataFrame(stats).T.sort_values("mean", ascending=False) 
+
+
+def plot_multilabel_mean_area_bar(
+    dataset,
+    num_classes=55,
+    ignore_index=0,
+    normalize=True,
+    min_presence=5
+):
+    """
+    Bar plot of the mean area per label (computed only on images where the label is present).
+
+    Args:
+        dataset : LabeledCTScanDataset
+        num_classes :
+        ignore_index :
+        normalize : area as ratio (True) or in pixels (False)
+        min_presence : minimum number of images required to display the label
+
+    Example:
+        plot_multilabel_mean_area_bar(dataset=full_lab, num_classes=NUM_CLASSES, min_presence=10)
+    """
+
+    H, W = dataset.masks[0].shape
+    total_pixels = H * W
+
+    labels = []
+    mean_areas = []
+    counts = []
+
+    for label in range(num_classes):
+        if label == ignore_index:
+            continue
+
+        areas = []
+        for mask in dataset.masks:
+            pix = np.sum(mask == label)
+            if pix > 0:
+                areas.append(pix / total_pixels if normalize else pix)
+
+        if len(areas) >= min_presence:
+            labels.append(label)
+            mean_areas.append(np.mean(areas))
+            counts.append(len(areas))
+
+    # sort by decreasing mean area
+    order = np.argsort(mean_areas)[::-1]
+    labels = np.array(labels)[order]
+    mean_areas = np.array(mean_areas)[order]
+    counts = np.array(counts)[order]
+
+    plt.figure(figsize=(14, 6))
+    plt.bar(labels, mean_areas, color="red")
+    plt.xlabel("Label")
+    plt.ylabel("Mean Area" + (" (ratio)" if normalize else " (pixels)"))
+    plt.title("Mean Area Covered per Label (only when the label is present)")
+    plt.xticks(labels, rotation=90)
+    plt.grid(axis="y", alpha=0.3)
+    plt.show()
+
+
+def plot_class_distribution(dataset):
+    """
+    Plot the pixel distribution of each class in the dataset as percentages.
+
+    Args:
+        dataset (Dataset): dataset returning (image, mask) pairs where mask
+                           contains class indices per pixel.
+
+    Example:
+        plot_class_distribution(full_lab)
+    """
+
+
+    class_counts = {}
+
+    for _, mask in dataset:
+        unique_classes = torch.unique(mask)
+        unique_classes = unique_classes[unique_classes != IGNORE_INDEX]
+
+        for class_id in unique_classes:
+            class_id = class_id.item()
+
+            if class_id not in class_counts:
+                class_counts[class_id] = 0
+
+            class_counts[class_id] += (mask == class_id).sum().item()
+
+    # Convert to percentage
+    total_pixels = sum(class_counts.values())
+    class_percentages = {
+        k: (v / total_pixels) * 100 for k, v in class_counts.items()
+    }
+
+    class_percentages = dict(sorted(class_percentages.items()))
+
+    # Display the histogram
+    plt.figure(figsize=(10, 6))
+    plt.bar(class_percentages.keys(), class_percentages.values(), color='skyblue')
+
+    plt.title("Class Distribution in Percentage", fontsize=14)
+    plt.xlabel("Label")
+    plt.ylabel("Percentage")
+    plt.xticks(range(NUM_CLASSES), rotation=90)
+    plt.tight_layout()
+    plt.show()
 
 

@@ -18,6 +18,7 @@ MEAN = np.array([0.485, 0.456, 0.406])
 STD  = np.array([0.229, 0.224, 0.225])
 
 #Legend colors
+NUM_CLASSES=55
 base_cmap = plt.cm.get_cmap("tab20", NUM_CLASSES)
 colors = base_cmap(np.arange(NUM_CLASSES))
 colors[0] = [0, 0, 0, 1] # background in black

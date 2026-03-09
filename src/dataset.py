@@ -1,16 +1,12 @@
-import sys
-sys.path.append("../")
-from utils.sort_files import alphanumeric_sort #Function which sort alphanumerically files
 import glob
 import os
 import numpy as np
-from PIL import Image
 import torch
 import cv2
-import albumentations as A
 from torch.utils.data import Dataset
 import pandas as pd
-#cv2.setNumThreads(0)  - To avoid slower computation
+from utils import alphanumeric_sort
+cv2.setNumThreads(0)  #- To avoid slower computation
 
 
 # ------------------ Datasets ------------------

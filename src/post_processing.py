@@ -118,7 +118,7 @@ def relabel_fp_by_convex_hull(pred_mask,
 def inference_with_postprocessing(
     test_loader,
     models,
-    head_index,
+    #head_index,
     device,
     use_ensemble=True,
     min_area_for_isolated=20,
@@ -134,103 +134,7 @@ def inference_with_postprocessing(
     all_preds = []
     filenames = []
 
-    test_head_set = set(head_index.tolist()) 
-
-
-    with torch.no_grad():
-        for imgs, names, indices in tqdm(test_loader, desc="Inference + postproc"):
-            imgs = imgs.to(device)
-
-            # ---------- forward ----------
-            if use_ensemble:
-                logits_acc = None
-                for m in models:
-                    logits_m = m(imgs)  # (B,C,H,W)
-                    logits_acc = logits_m if logits_acc is None else logits_acc + logits_m
-                logits_acc /= len(models)
-                preds = torch.argmax(logits_acc, dim=1)
-
-                #  softmax
-                probs = torch.softmax(logits_acc, dim=1)
-
-                #  top-2
-                top2_probs, top2_classes = torch.topk(probs, k=2, dim=1)
-
-                conf_map = top2_probs[:, 0, :, :]
-                preds    = top2_classes[:, 0, :, :]
-
-                second_conf  = top2_probs[:, 1, :, :]
-                second_class = top2_classes[:, 1, :, :]
-
-
-
-                if use_confidence_fallback:
-
-                    condition = (((preds == 21)  | (preds == 24))  & (conf_map < 0.80))
-                    preds= torch.where(condition, second_class, preds)
-
-                    # Apply only for test images whose index is in TEST_HEAD_INDEX
-                    condition2 = (preds == 0) & (conf_map < threshold)
-
-                    #
-                    mask_head = torch.tensor(
-                        [idx.item() in test_head_set for idx in indices],
-                        device=preds.device
-                    )
-                    mask_head = mask_head[:, None, None]
-
-                    preds = torch.where(condition2 & mask_head, second_class, preds)
-
-
-
-            else:
-                preds = torch.argmax(models[0](imgs), dim=1)
-
-            preds_np = preds.cpu().numpy()  # (B,H,W)
-
-
-
-            # ---------- post-processing ----------
-
-            for i in range(preds_np.shape[0]):
-                p = preds_np[i]
-
-                p_pp = relabel_fp_by_convex_hull(
-                    p,
-                    gt_mask=None,
-                    min_area_for_isolated=min_area_for_isolated,
-                    verbose=False
-                )
-
-                all_preds.append(p_pp.flatten())
-                filenames.append(names[i])
-
-    return np.stack(all_preds, axis=0), filenames
-
-
-
-
-def inference_with_postprocessing(
-    test_loader,
-    models,
-    head_index,
-    device,
-    use_ensemble=True,
-    min_area_for_isolated=20,
-    use_confidence_fallback=True,
-    threshold=0.95
-):
-    """
-    Runs inference on test_loader with optional ensemble and convex-hull post-processing.
-    Returns:
-        all_preds: numpy array (N_test, H*W)
-        filenames: list of filenames
-    """
-    all_preds = []
-    filenames = []
-
-    # set pour lookup rapide
-    test_head_set = set(head_index.tolist())
+    #test_head_set = set(head_index.tolist())
 
     with torch.no_grad():
         for imgs, names, indices in tqdm(test_loader, desc="Inference + postproc"):
@@ -260,16 +164,14 @@ def inference_with_postprocessing(
                     condition = (((preds == 21) | (preds == 24)) & (conf_map < 0.80))
                     preds = torch.where(condition, second_class, preds)
 
-                    # -------- condition 2 --------
-                    condition2 = (preds == 0) & (conf_map < threshold)
+                    # -------- condition 2 :to apply only for test images whose index is in TEST_HEAD_INDEX  --------
+                    #condition2 = (preds == 0) & (conf_map < threshold)
 
-                    #  Apply only for test images whose index is in TEST_HEAD_INDEX 
-                    mask_head = torch.tensor(
-                        [idx.item() in test_head_set for idx in indices],
-                        device=preds.device)
+                    # 
+                    #mask_head = torch.tensor([idx.item() in test_head_set for idx in indices],device=preds.device)
 
-                    mask_head = mask_head[:, None, None]
-                    preds = torch.where(condition2 & mask_head, second_class, preds)
+                    #mask_head = mask_head[:, None, None]
+                    #preds = torch.where(condition2 & mask_head, second_class, preds)
 
             else:
                 preds = torch.argmax(models[0](imgs), dim=1)
@@ -295,12 +197,7 @@ def inference_with_postprocessing(
 
 
 
-
-
-
-
-
-#-----------Post-processing en insérant de la field knowledge--------
+#-------------------
 
 # logits (C,H,W) for a single image, forbidden_classes indices
 #logits[forbidden_classes, :, :] = -1e9   # efface toute probabilité de ces classes

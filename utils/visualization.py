@@ -469,3 +469,99 @@ def plot_class_distribution(dataset):
     plt.show()
 
 
+
+
+
+def visualize_test_prediction_folds(index, model, dataset, device,
+                              display=False, confidence = 0.95):
+    """
+    Visualize:
+    - Image
+    - Predicted mask
+    - Confidence map
+    - Histogram of confidence scores (optional)
+    """
+    for m in models:
+      m.eval()
+
+    img_tensor, _ = dataset[index]
+    name = os.path.basename(dataset.image_paths[index])
+    img = img_tensor.unsqueeze(0).to(device)
+
+    # ---------------- Prediction ----------------
+    logits_acc = None
+    with torch.no_grad():
+      for m in models:
+
+
+                logits_m = m(img)  # (B,C,H,W)
+                logits_acc = logits_m if logits_acc is None else logits_acc + logits_m
+      logits_acc /= len(models)
+      probs_acc = F.softmax(logits_acc, dim=1)       # softmax
+      conf_map, pred_mask = torch.max(probs_acc, dim=1)
+
+
+      pred_mask = pred_mask.squeeze(0).cpu().numpy().astype(np.uint8)
+      conf_map  = conf_map.squeeze(0).cpu().numpy()
+
+    img = denormalize(img_tensor)
+
+    # ---------------- Mean confidence per class ----------------
+    logits = logits_acc
+
+    num_classes = logits.shape[1]
+    class_confidences = {}
+
+    for c in range(num_classes):
+        class_pixels = (pred_mask == c)
+        if class_pixels.sum() > 0:
+            mean_conf = conf_map[class_pixels].mean()
+            class_confidences[c] = float(mean_conf)
+        else:
+            class_confidences[c] = None  
+
+
+
+    if display:
+        print("Predicted classes :", np.unique(pred_mask)) #
+        print("\nMean confidence per class:") #
+        for c, score in class_confidences.items():
+            if score is not None:
+                print(f"Classe {c} : {score:.4f}")
+
+
+    # ---------------- Visualization ----------------
+    seg_masked = np.ma.masked_where(pred_mask.reshape((256, 256)) == 0, (pred_mask.reshape((256, 256))))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
+    # Image
+    axes[0].imshow(img)
+    axes[0].set_title(f"Image : {name}")
+    axes[0].axis("off")
+
+    axes[1].set_title("Predicted mask")
+    axes[1].axis("off")
+    axes[1].imshow(img)
+
+    # Mask
+    axes[1].imshow(
+        seg_masked,
+        cmap=seg_cmap,
+        vmin=0,
+        vmax=NUM_CLASSES - 1,
+        alpha=0.5,
+        interpolation="nearest"
+    )
+
+    # Confidence map
+    im = axes[2].imshow(conf_map, cmap="viridis")
+    axes[2].set_title("Confidence map (max softmax)")
+    axes[2].axis("off")
+    fig.colorbar(im, ax=axes[2])
+
+
+    plt.tight_layout()
+    plt.show()
+
+
+

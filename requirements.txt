@@ -1,5 +1,6 @@
-segmentation-models-pytorch
-albumentations
-umap
+
 streamlit==1.56.0
+streamlit-pdf-viewer
+pandas==2.2.2
+numpy==1.26.4
 

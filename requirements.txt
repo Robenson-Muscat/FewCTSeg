@@ -2,6 +2,5 @@ segmentation-models-pytorch
 albumentations
 torchvision
 umap
-streamlit == 1.36.0
-
+streamlit == 1.37.0
 

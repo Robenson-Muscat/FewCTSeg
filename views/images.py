@@ -13,10 +13,10 @@ from utils import alphanumeric_sort
 
 # --- CONFIG ---
 IMAGE_DIR = "data/test-images/"
-PREDICTIONS_CSV = "submissions/test_predictions_kfold.csv"
+PREDICTIONS_CSV = "submissions/test_predictions_kfold_combined_1404_postproc_20_bestval_confidencefallback.csv"
 
-COLS_PER_ROW = 4
-IMAGES_PER_PAGE = 40
+COLS_PER_ROW = 5
+IMAGES_PER_PAGE = 50
 NUM_CLASSES = 55
 
 st.title("CT Scan Images")

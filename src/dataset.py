@@ -1,42 +1,49 @@
 import glob
 import os
+import sys
+
 import numpy as np
 import torch
 import cv2
 from torch.utils.data import Dataset
 import pandas as pd
-from utils import alphanumeric_sort
+
+sys.path.append('../utils/')
 cv2.setNumThreads(0)  #- To avoid slower computation
+
 
 
 # ------------------ Datasets ------------------
 class LabeledCTScanDataset(Dataset):
     def __init__(self, img_dir, mask_csv, transform=None, indices=None):
-        paths = sorted(glob.glob(os.path.join(img_dir, '*.png')), key=alphanumeric_sort)
-        masks = pd.read_csv(mask_csv, index_col=0).T.values.reshape(-1,256,256).astype(np.uint8)
-        valid = [m.sum()>0 for m in masks]
-        paths = [p for p,v in zip(paths, valid) if v]
-        masks = masks[np.array(valid)]
+        all_paths = sorted(glob.glob(os.path.join(img_dir, '*.png')), key=alphanumeric_sort)
+        masks_all = pd.read_csv(mask_csv, index_col=0).T.values.reshape(-1,256,256).astype(np.uint8)
+        valid = [m.sum()>0 for m in masks_all]
+        filtered_global_idxs = [i for i, v in enumerate(valid) if v]  
+
+        # If caller provided `indices`, we expect them to be indices relative to the filtered set
         if indices is not None:
-            self.image_paths = [paths[i] for i in indices]
-            self.masks = masks[np.array(indices)]
+            self.global_indices = [filtered_global_idxs[i] for i in indices]
         else:
-            self.image_paths = paths
-            self.masks = masks
+            self.global_indices = filtered_global_idxs
+
+        self.image_paths = [all_paths[i] for i in self.global_indices]
+        self.masks = masks_all[np.array(self.global_indices)]
         self.transform = transform
 
     def __len__(self): return len(self.image_paths)
 
     def __getitem__(self, idx):
-        if idx >= len(self):
-            raise IndexError(f'Index {idx} out of range for dataset of size {len(self)}')
         img = cv2.cvtColor(cv2.imread(self.image_paths[idx]), cv2.COLOR_BGR2RGB)
         mask = self.masks[idx]
         if self.transform is not None:
             aug = self.transform(image=img, mask=mask)
-            return aug['image'], aug['mask']
+            img_t, mask_t = aug['image'], aug['mask']
         else:
-            return torch.from_numpy(img).permute(2,0,1).float()/255.0 , torch.from_numpy(mask).long()
+            img_t = torch.from_numpy(img).permute(2,0,1).float()/255.0
+            mask_t = torch.from_numpy(mask).long()
+        global_idx = self.global_indices[idx]
+        return img_t, mask_t, global_idx
 
 
 
@@ -46,11 +53,10 @@ class UnlabeledPathsDataset(Dataset):
         self.image_paths = img_paths
     def __len__(self): return len(self.image_paths)
     def __getitem__(self, idx):
-        if idx >= len(self):
-            raise IndexError(f'Index {idx} out of range for dataset of size {len(self)}')
         img = cv2.cvtColor(cv2.imread(self.image_paths[idx]), cv2.COLOR_BGR2RGB)
-        return img, self.image_paths[idx]
-
+        name = os.path.basename(self.image_paths[idx])
+        global_idx = int(os.path.splitext(name)[0])
+        return img, self.image_paths[idx], global_idx
 
 class TestCTScanDataset(Dataset):
     def __init__(self, img_dir, transform=None):
@@ -58,10 +64,15 @@ class TestCTScanDataset(Dataset):
         self.transform = transform
     def __len__(self): return len(self.image_paths)
     def __getitem__(self, idx):
-        if idx >= len(self):
-            raise IndexError(f'Index {idx} out of range for dataset of size {len(self)}')
         img = cv2.cvtColor(cv2.imread(self.image_paths[idx]), cv2.COLOR_BGR2RGB)
         name = os.path.basename(self.image_paths[idx])
+        global_idx = int(os.path.splitext(name)[0])
+
         if self.transform:
             img = self.transform(image=img)['image']
-        return img, name
+        else:
+            img = torch.from_numpy(img).permute(2,0,1).float()/255.0
+            
+        return img, name, global_idx
+
+

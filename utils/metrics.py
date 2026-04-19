@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 # Dice metric function
 # ---------------------------
 
-
 def compute_per_class_dice(model, val_loader, num_classes,
                                      device=None, ignore_index=None, eps=1e-6,
                                      show_progress=True, plot=True, figsize=(16,6),
@@ -166,4 +165,5 @@ def compute_per_class_dice(model, val_loader, num_classes,
 
         plt.show()
 
-    #return dice_array, df, macro_dice, weighted_dice
+    return dice_array, df, macro_dice, weighted_dice
+

@@ -4,11 +4,10 @@ streamlit-pdf-viewer
 pandas==2.2.2
 numpy==1.26.4
 scikit-learn==1.6.1
-
 segmentation-models-pytorch
 albumentations
 umap-learn
 torch
 matplotlib
-cv2
+opencv-python
 tqdm

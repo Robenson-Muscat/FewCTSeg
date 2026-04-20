@@ -2,7 +2,7 @@
 
 ## Context
 
-FewCTSeg is a project solution to the medical image segmentation challenge co-organized by Raidium and ENS Paris-Saclay in 2026.
+FewCTSeg is a project solution to the [medical image segmentation challenge](https://challengedata.ens.fr/participants/challenges/165/) co-organized by Raidium and ENS Paris-Saclay in 2026.
 
 This project aims to automatically segment anatomical structures and tumors in CT scans using machine learning and deep learning techniques.
 
@@ -16,7 +16,7 @@ In the image below, from an abdominal CT scan, the different structures have bee
 
 I am the winner of this challenge.
 
-![Rankings](images/rankings.png).
+![Rankings](images/ranking.png).
 
 ## Goal
 

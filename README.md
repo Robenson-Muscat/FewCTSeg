@@ -21,6 +21,11 @@ Raw CT-scan images, without any segmented structure can be used as additional tr
 
 The test set is composed of new images with all the corresponding segmented structures, and the metric measures the ability to correctly segment and separate the different structures on an image.
 
+## Data
+
+Please check out ![](data/INSTALL.md)
+
+
 
 ---
 

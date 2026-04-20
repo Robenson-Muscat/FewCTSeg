@@ -10,7 +10,7 @@ This project aims to automatically segment anatomical structures and tumors in C
 Computed Tomography (CT) scans are medical imaging techniques that use X-rays combined with computer processing to generate detailed cross-sectional images of the human body. 
 Unlike standard X-ray images, CT scans provide volumetric (3D) information by stacking multiple 2D slices, allowing for precise visualization of internal organs, tissues, and pathological structures.
 
-In this challenge, the data consists of **2D slices extracted from CT scans**, specifically in the ** axial plane**, which corresponds to horizontal cross-sections of the body. 
+In this challenge, the data consists of **2D slices extracted from CT scans**, specifically in the axial plane, which corresponds to horizontal cross-sections of the body. 
 Each slice represents a thin section of anatomy, and the objective is to segment the different structures visible within each individual image.
 
 

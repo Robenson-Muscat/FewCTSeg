@@ -1,11 +1,22 @@
 # FewCTSeg
 
 ## Context
-CT-scans offer very precise 3D images of the human body (up to 0.5 mm resolution) and thus allow to capture the human anatomy.
-The objective of this challenge is to automatically segment the anatomical structures of the human body, as well as tumors, on a CT-scan. In other words, it is about identifying the shapes visible on a CT-scan."z
+
+FewCTSeg is a project solution to the medical image segmentation challenge co-organized by Raidium and ENS Paris-Saclay in 2026.
+
+This project aims to automatically segment anatomical structures and tumors in CT scans using machine learning and deep learning techniques.
+
+Computed Tomography (CT) scans are medical imaging techniques that use X-rays combined with computer processing to generate detailed cross-sectional images of the human body. CT scans provide volumetric (3D) information by stacking multiple 2D slices, allowing for precise visualization of internal organs, tissues, and pathological structures.
+
+In this challenge, the data consists of 2D slices extracted from CT scans, specifically in the axial plane, which corresponds to horizontal cross-sections of the body. Each slice represents a thin section of anatomy, and the objective is to segment the different structures visible within each individual image.
+
 In the image below, from an abdominal CT scan, the different structures have been segmented:
 
 ![Example of an abdominal CT scan](images/raidium_2024_1.png).
+
+I am the winner of this challenge.
+
+![Rankings](images/rankings.png).
 
 ## Goal
 
@@ -23,13 +34,14 @@ The test set is composed of new images with all the corresponding segmented stru
 
 ## Data
 
-Please check out ![](data/INSTALL.md)
+Please check out [data installation instructions](./data/INSTALL.md).
 
 
+## Method 
 
----
+Our method is mainly predicated on UniMatch , a semi-supervised technique at the intersection of pseudo-labeling and consistency regularization. You can run the training pipeline [here](train.py).
 
-## UniMatch : a unique semi-supervised semantic segmentation technique
+### UniMatch : a unique semi-supervised semantic segmentation technique
 
 [UniMatch](https://arxiv.org/pdf/2208.09910) is a efficient novel deep learning framework that can be used to train semantic segmentation models when labels are limited and uses unlabeled images as extra training data under a consistency‑regularization framework (assumption that prediction of an unlabeled example should be invariant to different forms of perturbations). This method combines three consistency streams:
 
@@ -53,7 +65,7 @@ These three streams should be probalistically as close as possible to output a s
 
 2. **Data splits**  
    - All images with empty masks are assigned to the unlabeled pool, while images with non-empty masks go to the labeled pool.
-   - 80% of the labeled images are used for training, while the remaining 20% are used for validation. 
+   - Training with KFold (5 splits)
 
 3. **First phase : Supervised training**
    - Training with a $L_{sup} =Dice(y,ŷ)$ with $y$ ground‑truth mask and $ŷ$  predicted logits for a labeled image $x$
@@ -63,7 +75,7 @@ These three streams should be probalistically as close as possible to output a s
    - Optionally, we report the fraction_kept per batch or epoch to monitor the filtering process.
 
 5. **Augmentations**  
-   - For augmentations, we apply Cutout as a strong perturbation, Dropout as a feature perturbation, and Crop as a weak perturbation, as these combinations yielded the best results during testing.
+   - For augmentations, we apply Cutout as a strong perturbation, Channel Dropout as a feature perturbation, and Crop as a weak perturbation, as these combinations yielded the best results during testing.
     
 6. **Seconde phase : semi‑supervised training**  
    - In the second phase, we combine the labeled and pseudo-labeled sets into a mixed batch. 

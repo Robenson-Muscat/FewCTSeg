@@ -21,7 +21,7 @@ DATA_URL = "https://challengedata.ens.fr/media/public/test-images.zip"
 BASE_DIR = "data"
 IMAGE_DIR = os.path.join(BASE_DIR, "test-images")
 
-PREDICTIONS_CSV = "submissions/test_predictions_kfold_combined_1404_postproc_20_bestval_confidencefallback.csv"
+PREDICTIONS_CSV ="assets/winning_submission.csv"
 
 COLS_PER_ROW = 5
 IMAGES_PER_PAGE = 50

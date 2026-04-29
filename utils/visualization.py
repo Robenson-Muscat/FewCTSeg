@@ -69,7 +69,7 @@ def visualize_test_prediction(index, model, dataset, device, display=False):
     pass
 
 
-    img_tensor, _ = dataset[index]
+    img_tensor, _,_ = dataset[index]
     name = os.path.basename(dataset.image_paths[index])
     img = img_tensor.unsqueeze(0).to(device)
 
@@ -120,7 +120,7 @@ def plot_slice_seg(dataset, index):
    
     fig, axes = plt.subplots(1, 2)
 
-    image_tensor,mask = dataset[index]
+    image_tensor,mask,_= dataset[index]
     image = denormalize(image_tensor)
 
     
@@ -164,7 +164,7 @@ def visualize_grid_masks(index_img, dataset):
             img, mask = aug['image'], aug['mask']
             img = denormalize(img)
         else:
-            img_tensor, mask = dataset[im]
+            img_tensor, mask,_ = dataset[im]
             img = img_tensor.permute(1, 2, 0).cpu().numpy()
             img = np.clip(img, 0, 1)  # Clip values to valid range
         ax.axis("off")
@@ -225,7 +225,7 @@ def visualize_specific_label(labels, dataset, max_images=30, mask_only=True):
             img, mask = aug["image"], aug["mask"]
             img = denormalize(img)
         else:
-            img_tensor, mask = dataset[im]
+            img_tensor, mask,_ = dataset[im]
             img = img_tensor.permute(1, 2, 0).cpu().numpy()
             img = np.clip(img, 0, 1)
 
@@ -278,7 +278,7 @@ def get_labels_by_index(index: int, dataset) -> list:
     if hasattr(dataset, "masks"):
         mask = dataset.masks[index]
     else:
-        _, mask = dataset[index]
+        _, mask,_ = dataset[index]
 
     # Flatten and return unique labels
     labels = np.unique(mask)
@@ -413,16 +413,16 @@ def plot_multilabel_mean_area_bar(
     counts = np.array(counts)[order]
 
     plt.figure(figsize=(14, 6))
-    plt.bar(labels, mean_areas, color="red")
+    plt.bar(labels, mean_areas, color="gold")
     plt.xlabel("Label")
     plt.ylabel("Mean Area" + (" (ratio)" if normalize else " (pixels)"))
-    plt.title("Mean Area Covered per Label (only when the label is present)")
+    plt.title("Mean Area Covered per Label")
     plt.xticks(labels, rotation=90)
     plt.grid(axis="y", alpha=0.3)
     plt.show()
 
 
-def plot_class_distribution(dataset):
+def plot_class_distribution(dataset, ignore_index = 0):
     """
     Plot the pixel distribution of each class in the dataset as percentages.
 
@@ -437,9 +437,9 @@ def plot_class_distribution(dataset):
 
     class_counts = {}
 
-    for _, mask in dataset:
+    for _, mask,_ in dataset:
         unique_classes = torch.unique(mask)
-        unique_classes = unique_classes[unique_classes != IGNORE_INDEX]
+        unique_classes = unique_classes[unique_classes != ignore_index]
 
         for class_id in unique_classes:
             class_id = class_id.item()
@@ -484,7 +484,7 @@ def visualize_test_prediction_folds(index, model, dataset, device,
     for m in models:
       m.eval()
 
-    img_tensor, _ = dataset[index]
+    img_tensor, _,_ = dataset[index]
     name = os.path.basename(dataset.image_paths[index])
     img = img_tensor.unsqueeze(0).to(device)
 

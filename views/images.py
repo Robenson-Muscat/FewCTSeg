@@ -136,12 +136,27 @@ img = np.array(load_image(image_paths[selected_index]))
 pred_mask = masks[selected_index]
 seg_masked = np.ma.masked_where(pred_mask == 0, pred_mask)
 
-fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+# Exemple de noms de classes (à adapter !)
+class_names = [f"Class {i}" for i in range(NUM_CLASSES)]
 
+#fig, axes = plt.subplots(1, 3, figsize=(16, 6))
+
+fig, axes = plt.subplots(
+    1, 3,
+    figsize=(14, 6),
+    gridspec_kw={'width_ratios': [1, 1, 0.25]}
+)
+
+# =========================
+# IMAGE ORIGINALE
+# =========================
 axes[0].imshow(img)
 axes[0].set_title("Original image")
 axes[0].axis("off")
 
+# =========================
+# IMAGE + MASQUE
+# =========================
 axes[1].imshow(img)
 axes[1].imshow(
     seg_masked,
@@ -153,6 +168,46 @@ axes[1].imshow(
 )
 axes[1].set_title("Predicted mask")
 axes[1].axis("off")
+
+# =========================
+# LÉGENDE CUSTOM
+# =========================
+axes[2].axis("off")
+axes[2].set_title("Legend")
+
+# Classes présentes uniquement (option très utile)
+unique_classes = np.unique(pred_mask)
+unique_classes = unique_classes[unique_classes != 0]  # enlever fond
+
+# Limiter si trop de classes (sinon illisible)
+max_display = 20
+display_classes = unique_classes[:max_display]
+
+for i, cls in enumerate(display_classes):
+    color = seg_cmap(cls)
+
+    axes[2].add_patch(
+        plt.Rectangle((0, i), 1, 1, color=color)
+    )
+
+    axes[2].text(
+        1.2,
+        i + 0.5,
+        class_names[cls],
+        va='center'
+    )
+
+axes[2].set_xlim(0, 6)
+axes[2].set_ylim(0, len(display_classes))
+axes[2].invert_yaxis()
+
+# Message si trop de classes
+if len(unique_classes) > max_display:
+    axes[2].text(
+        0,
+        len(display_classes) + 1,
+        f"... +{len(unique_classes) - max_display} classes"
+    )
 
 st.pyplot(fig, clear_figure=True)
 
@@ -169,3 +224,4 @@ for i in range(0, len(page_paths), COLS_PER_ROW):
             img = load_image(img_path)
             st.image(img, use_container_width=True)
             st.caption(os.path.basename(img_path))
+

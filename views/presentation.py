@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.title("FewCTSeg Project Overview")
+st.title("Overview")
 
 st.markdown("""
 FewCTSeg is a project solution to the medical image segmentation [challenge](https://challengedata.ens.fr/participants/challenges/165/) co-organized by **Raidium** and **ENS Paris-Saclay**.
@@ -18,7 +18,7 @@ I am the **winner of this challenge**.
 
 """)
 
-#st.image("images/ranking.png",caption="Challenge ranking")
+st.image("images/ranking.png",caption="Challenge ranking")
 
 st.markdown("""
 ---
@@ -70,16 +70,15 @@ $$
 
 ---
 
-## Links
-
 """)
+## Links
 
 st.link_button(
     "Open the GitHub repository",
     "https://github.com/Robenson-Muscat/FewCTSeg"
 )
 
-st.page_link("views/analysis.py", label="Open the Method tab")
+#st.page_link("views/analysis.py", label="Open the Method tab")
 
 
 

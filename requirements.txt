@@ -9,5 +9,5 @@ albumentations
 umap-learn
 torch
 matplotlib
-opencv-python
+opencv-python-headless
 tqdm

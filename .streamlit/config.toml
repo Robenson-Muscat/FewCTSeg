@@ -1,9 +1,13 @@
 [theme]
-primaryColor = "#FF4B4B"
+primaryColor = "#7ECBEE"
 backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F0F2F6"
+secondaryBackgroundColor = "#E8F4FA"  # fond doux pour sidebar / widgets
 textColor = "#262730"
 font = "sans serif"
+
+
+base = "light"
+
 
 [server]
 headless = true

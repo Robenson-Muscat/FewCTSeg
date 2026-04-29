@@ -8,8 +8,12 @@ import cv2
 from torch.utils.data import Dataset
 import pandas as pd
 
-sys.path.append('../utils/')
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import alphanumeric_sort 
+
+
 cv2.setNumThreads(0)  #- To avoid slower computation
+
 
 
 
@@ -21,7 +25,7 @@ class LabeledCTScanDataset(Dataset):
         valid = [m.sum()>0 for m in masks_all]
         filtered_global_idxs = [i for i, v in enumerate(valid) if v]  
 
-        # If caller provided `indices`, we expect them to be indices relative to the filtered set
+
         if indices is not None:
             self.global_indices = [filtered_global_idxs[i] for i in indices]
         else:

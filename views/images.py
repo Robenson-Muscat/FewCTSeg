@@ -49,7 +49,7 @@ def download_and_extract(url, extract_dir):
     zip_file = zipfile.ZipFile(BytesIO(response.content))
     zip_file.extractall(extract_dir)
 
-    st.success("Dataset ready!")
+    #st.success("Dataset ready!")
 
 download_and_extract(DATA_URL, BASE_DIR)
 

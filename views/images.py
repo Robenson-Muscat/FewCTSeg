@@ -20,14 +20,13 @@ from utils import alphanumeric_sort
 DATA_URL = "https://challengedata.ens.fr/media/public/test-images.zip"
 BASE_DIR = "data"
 IMAGE_DIR = os.path.join(BASE_DIR, "test-images")
-
 PREDICTIONS_CSV ="assets/winning_submission.csv"
-
 COLS_PER_ROW = 5
 IMAGES_PER_PAGE = 50
 NUM_CLASSES = 55
 
 st.title("CT Scan Images")
+
 
 # =========================
 # DOWNLOAD + EXTRACT
@@ -148,14 +147,14 @@ fig, axes = plt.subplots(
 )
 
 # =========================
-# IMAGE ORIGINALE
+# IMAGE
 # =========================
 axes[0].imshow(img)
 axes[0].set_title("Original image")
 axes[0].axis("off")
 
 # =========================
-# IMAGE + MASQUE
+# IMAGE + MASK
 # =========================
 axes[1].imshow(img)
 axes[1].imshow(
@@ -170,16 +169,15 @@ axes[1].set_title("Predicted mask")
 axes[1].axis("off")
 
 # =========================
-# LÉGENDE CUSTOM
+# LEGEND
 # =========================
 axes[2].axis("off")
 axes[2].set_title("Legend")
 
-# Classes présentes uniquement (option très utile)
 unique_classes = np.unique(pred_mask)
-unique_classes = unique_classes[unique_classes != 0]  # enlever fond
+unique_classes = unique_classes[unique_classes != 0] 
 
-# Limiter si trop de classes (sinon illisible)
+
 max_display = 20
 display_classes = unique_classes[:max_display]
 

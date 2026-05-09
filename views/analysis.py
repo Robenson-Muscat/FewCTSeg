@@ -12,16 +12,14 @@ This section presents the winning approach.
 #st.success("🏆 1st place")
 
 
-pdf_url = st.secrets["pdf"]["url"]
 
+pdf_url = st.secrets["pdf"]["url"]
 
 response = requests.get(pdf_url)
 
 if response.status_code == 200:
-    pdf_bytes = response.content
-    pdf_viewer(pdf_bytes)
+    pdf_viewer(response.content)
 else:
-    st.error("Impossible de charger le PDF")
-
-
+    st.error("Loading error")
 pdf_viewer(pdf_url)
+

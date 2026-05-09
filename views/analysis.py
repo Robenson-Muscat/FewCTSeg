@@ -21,5 +21,5 @@ if response.status_code == 200:
     pdf_viewer(response.content)
 else:
     st.error("Loading error")
-pdf_viewer(pdf_url)
+#pdf_viewer(pdf_url)
 

@@ -28,6 +28,8 @@ NUM_CLASSES = 55
 st.title("CT Scan Images")
 
 
+
+
 # =========================
 # DOWNLOAD + EXTRACT
 # =========================
@@ -56,7 +58,11 @@ download_and_extract(DATA_URL, BASE_DIR)
 # =========================
 # COLOR MAP
 # =========================
-base_cmap = plt.cm.get_cmap("tab20", NUM_CLASSES)
+#base_cmap = plt.cm.get_cmap("tab20", NUM_CLASSES)
+try:
+    base_cmap = plt.colormaps["tab20"].resampled(NUM_CLASSES)
+except AttributeError:
+    base_cmap = plt.cm.get_cmap("tab20", NUM_CLASSES)
 colors = base_cmap(np.arange(NUM_CLASSES))
 colors[0] = [0, 0, 0, 1]
 seg_cmap = ListedColormap(colors)
